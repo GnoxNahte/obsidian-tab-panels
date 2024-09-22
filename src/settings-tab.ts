@@ -1,15 +1,16 @@
-import { App, PluginSettingTab } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import TabPanelsPlugin from "./main";
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface TabPanelsSettings {
+	codeblockKeyword: string;
+    // animation
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+export const DEFAULT_SETTINGS: TabPanelsSettings = {
+	codeblockKeyword: 'tab-panels'
 }
 
-export class SampleSettingTab extends PluginSettingTab {
+export class TabPanelsTab extends PluginSettingTab {
 	plugin: TabPanelsPlugin;
 
 	constructor(app: App, plugin: TabPanelsPlugin) {
@@ -20,6 +21,20 @@ export class SampleSettingTab extends PluginSettingTab {
 	display(): void {
 		const {containerEl} = this;
 
+        // To shorten the code
+        const settings = this.plugin.settings;
+
 		containerEl.empty();
+
+        new Setting(containerEl)
+            .setName("Codeblock keyword")
+            .addText(text => text
+                .setValue(settings.codeblockKeyword)
+                .setPlaceholder("tab-panels")
+                .onChange(async (value) => {
+                    settings.codeblockKeyword = value;
+                    await this.plugin.saveSettings();
+                })
+            )
 	}
 }
