@@ -1,0 +1,62 @@
+name: Bug Report
+description: "Found a bug? Report it so it can be fixed!"
+title: "Bug report"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen? If it's hard to describe, take a screenshot and paste it here!
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: markdown-example
+    attributes:
+      label: Sample Markdown
+      description: If applicable, please provide the markdown used where the bug occurred
+      placeholder: |
+        ![options](url)
+  - type: textarea
+    id: console-error
+    attributes:
+      label: Errors
+      description: |
+        Was there any error that appeared in the console? 
+        To open the console:
+        - Windows: Ctrl + Shift + I
+        - Mac: Cmd + Option + I
+      placeholder: |
+        ![options](url)
+  - type: input 
+    id: obsidian-version
+    attributes:
+      label: Obsidian Version
+      description: What Obsidian version are you using?
+      placeholder: 1.6.7
+    validations:
+      required: true
+  - type: input 
+    id: plugin-version 
+    attributes:
+      label: Plugin Version
+      description: What plugin version are you using?
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+         - Windows
+         - MacOS
+         - Linux
+         - iOS
+         - Android
+    validations:
+      required: true
