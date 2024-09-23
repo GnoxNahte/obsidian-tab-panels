@@ -16,23 +16,37 @@ export class TabPanelsBuilder {
         const contentContainer = createDiv({ cls: "content-container", parent: container });
 
         // Split the different tabs
-        const tabMatches = Array.from(markdown.matchAll(/^\s*---\s*(.*\S)*/gm));
-
-        let defaultTab = 0;
+        // 
+        // Breakdown of the regex (Referenced from regex101.com)
+        // 1. "^": Asserts start of line
+        // 2. "[^\S\r\n]*": Matches zero and unlimited spaces, tabs and any other whitespace characters (e.g. \v, \f, Zero-width space - \u200B). 
+        //                  Why never use \s: It matches \n and \r
+        // 3. "---"
+        // 4. "[^\S\r\n]*": Same as 2.
+        // 5. "(.*)": Captures all characters (except line terminators like \n)
+        //
+        // Note got "[^\S\r\n]*" from https://stackoverflow.com/a/17752989
+        const tabMatches = Array.from(markdown.matchAll(/^[^\S\r\n]*---[^\S\r\n]*(.*)/gm));
         
+        if (tabMatches.length === 0) {
+            
+        }
+        
+        let defaultTab = 0;
+
         for (let i = 0; i < tabMatches.length; i++) {
             const tabMatch = tabMatches[i];
             // Create tab
             let tabText = tabMatch[1];
-            const isDefaultPos = tabText.indexOf("(default)");
-            if (isDefaultPos != -1) {
-                console.log("Hit: " + tabText + " | " + isDefaultPos)
+            const getDefaultPosRegex = tabText.match(/\(default\)\s*$/i);
+            if (getDefaultPosRegex) {
                 defaultTab = i;
-                tabText = tabText.substring(0, isDefaultPos);
+                tabText = tabText.substring(0, getDefaultPosRegex.index);
             }
-            const tab = createEl("li", { cls: "tab", parent: tabsContainer, text: tabText.trim() });
+            const tab = createEl("li", { cls: "tab", parent: tabsContainer });
             tab.addEventListener("click", () => this.switchTab(i, tabsContainer, contentContainer))
 
+            createEl("span", { parent: tab, text: tabText.trim() })
             
             const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : undefined;
             let contentMarkdown = markdown.substring(tabMatch.index, contentMarkdownEnd);

@@ -4,8 +4,8 @@
     padding: 1em;
     
     border: var(--border-width) solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
-    background-color: var(--background-secondary);
+    border-radius: var(--radius-l);
+    background-color: var(--background-secondary-alt);
 }
 
 ul.tab-container{
@@ -14,16 +14,31 @@ ul.tab-container{
     list-style: none;
     margin: 0 1em 0 15px;
     margin-block: 0;
+    flex-wrap: nowrap;
 }
 
 .tab-container > li.tab {
     margin: 0;
-    margin-inline-start: 0;
-    
+
+    display: inline-block;
+    /* min-width: 5em; */
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+
+    width: fit-content;
+
+    /* max-width: 100%; */
+    max-width: 200px;
     padding: 0.2em 1em;
     background-color: var(--background-secondary);
     border-top-left-radius: 0.5em;
     border-top-right-radius: 0.5em;
+
+    &:hover {
+        background-color: var(--background-modifier-hover);
+    }
     
     &.selected {
         color: var(--color-accent);
@@ -35,23 +50,26 @@ ul.tab-container{
         margin-bottom: -2px;
         box-sizing: border-box;
 
+        /* Small curves at the sides of the tabs */
+        /* Copied from inspecting Obsidian tabs */
         &::before {
-            box-shadow: 0 0 0 calc(var(--tab-curve) * 4) var(--tab-background-active);
+            box-shadow: inset 0 0 0 var(--tab-outline-width) var(--tab-outline-color), 0 0 0 calc(var(--tab-curve) * 4) var(--tab-background-active);
             left: calc(var(--tab-curve) * -2);
             clip-path: inset(50% calc(var(--tab-curve) * -1) 0 50%);
             position: absolute;
-            bottom: 0;
+            bottom: 1px;
             content: '';
             width: calc(var(--tab-curve) * 2);
             height: calc(var(--tab-curve) * 2);
             border-radius: 100%;
+            /* border: 2px solid red; */
         }
         &::after {
-            box-shadow: 0 0 0 calc(var(--tab-curve) * 4) var(--tab-background-active);
+            box-shadow: inset 0 0 0 var(--tab-outline-width) var(--tab-outline-color), 0 0 0 calc(var(--tab-curve) * 4) var(--tab-background-active);
             right: calc(var(--tab-curve) * -2);
             clip-path: inset(50% 50% 0 calc(var(--tab-curve) * -1));
             position: absolute;
-            bottom: -0.1px;
+            bottom: 1px;
             content: '';
             width: calc(var(--tab-curve) * 2);
             height: calc(var(--tab-curve) * 2);
@@ -86,7 +104,11 @@ div.content-container {
         display: none;
     }
 
-    & p {
+    & p:first-child {
+        margin-top: 0 !important;
+    }
+
+    & p:last-child {
         margin-bottom: 0 !important;
     }
 }
