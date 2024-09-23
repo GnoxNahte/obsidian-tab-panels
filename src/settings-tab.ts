@@ -3,11 +3,13 @@ import TabPanelsPlugin from "./main";
 
 export interface TabPanelsSettings {
 	codeblockKeyword: string;
+    hideNoTabWarning: boolean;
     // animation
 }
 
 export const DEFAULT_SETTINGS: TabPanelsSettings = {
-	codeblockKeyword: 'tab-panels'
+	codeblockKeyword: 'tab-panels',
+    hideNoTabWarning: false,
 }
 
 export class TabPanelsTab extends PluginSettingTab {
@@ -33,6 +35,16 @@ export class TabPanelsTab extends PluginSettingTab {
                 .setPlaceholder("tab-panels")
                 .onChange(async (value) => {
                     settings.codeblockKeyword = value;
+                    await this.plugin.saveSettings();
+                })
+            )
+
+        new Setting(containerEl)
+            .setName("Hide no tab warning")
+            .addToggle(toggle => toggle
+                .setValue(settings.hideNoTabWarning)
+                .onChange(async (value) => {
+                    settings.hideNoTabWarning = value;
                     await this.plugin.saveSettings();
                 })
             )

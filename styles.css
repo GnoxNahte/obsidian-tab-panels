@@ -1,54 +1,64 @@
 .tab-panel-container {
     display: flex;
     flex-direction: column;
-    padding: 1em;
+    --padding-dist: 1em;
+    --outer-border-radius: 1.5em;
+    --inner-border-radius: calc(var(--outer-border-radius) - var(--padding-dist));
+    padding: var(--padding-dist);
     
     border: var(--border-width) solid var(--background-modifier-border);
-    border-radius: var(--radius-l);
+    border-radius: var(--outer-border-radius);
     background-color: var(--background-secondary-alt);
 }
 
-ul.tab-container{
-    display: flex;
-    gap: 0.2em;
-    list-style: none;
-    margin: 0 1em 0 15px;
-    margin-block: 0;
-    flex-wrap: nowrap;
+.tab-scroll-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    &::-webkit-scrollbar-track-piece {
+        margin-left: 3px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background-color: var(--background-primary) !important;
+
+        border-top-left-radius: 0.5em;
+        border-top-right-radius: 0.5em;
+        
+        border: var(--border-width) solid var(--background-modifier-border);
+        border-bottom: none;
+
+        box-shadow: 0 5px 0 -1px var(--background-primary),
+                    0 5px var(--background-modifier-border);
+        /* 0.4px 5px var(--background-modifier-border);; */
+    }
 }
 
-.tab-container > li.tab {
-    margin: 0;
-
-    display: inline-block;
-    /* min-width: 5em; */
-    text-overflow: ellipsis;
-    text-wrap: nowrap;
-    overflow: hidden;
-    white-space: nowrap;
-
+ul.tab-container {
+    /* margin: 0 7px; */
+    display: flex;
+    list-style: none;
+    margin-block: 0;
+    margin: 0 15px;
+    gap: 0.2em;
     width: fit-content;
+}
 
-    /* max-width: 100%; */
-    max-width: 200px;
+.tab-panel-container li.tab {
+    /* Remove list styling */
+    white-space: nowrap;
+    margin-inline-start: 0;
+
     padding: 0.2em 1em;
-    background-color: var(--background-secondary);
+
     border-top-left-radius: 0.5em;
     border-top-right-radius: 0.5em;
 
-    &:hover {
-        background-color: var(--background-modifier-hover);
-    }
-    
     &.selected {
-        color: var(--color-accent);
         border: var(--border-width) solid var(--background-modifier-border);
-        background-color: var(--background-primary);
-        /* margin-bottom: -2px;
-        border-bottom: 2px solid var(--background-primary); */
         border-bottom: none;
-        margin-bottom: -2px;
-        box-sizing: border-box;
+        margin-bottom: -1px;
+        background-color: var(--background-primary);
 
         /* Small curves at the sides of the tabs */
         /* Copied from inspecting Obsidian tabs */
@@ -82,21 +92,12 @@ ul.tab-container{
     }
 }
 
-.tab-label {
-    padding: 0.3em 1em;
-}
-
-.tab:checked + .tab-label {
-    border-top-left-radius: 0.5em;
-    border-top-right-radius: 0.5em;
-}
-
 div.content-container {
     /* border: 1px solid black; */
     background-color: var(--background-primary);
     border: var(--border-width) solid var(--background-modifier-border);
     padding: 1em;
-    border-radius: var(--radius-m);
+    border-radius: var(--inner-border-radius);
 }
 
 .content-container > div {

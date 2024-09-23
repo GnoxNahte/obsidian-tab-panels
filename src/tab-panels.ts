@@ -12,7 +12,8 @@ export class TabPanelsBuilder {
     create(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
         container.classList.add("tab-panel-container");
 
-        const tabsContainer = createEl("ul", { cls: "tab-container", parent: container });
+        const tabScrollContainer = createEl("div", { cls: "tab-scroll-container", parent: container });
+        const tabsContainer = createEl("ul", { cls: "tab-container", parent: tabScrollContainer });
         const contentContainer = createDiv({ cls: "content-container", parent: container });
 
         // Split the different tabs
@@ -29,7 +30,16 @@ export class TabPanelsBuilder {
         const tabMatches = Array.from(markdown.matchAll(/^[^\S\r\n]*---[^\S\r\n]*(.*)/gm));
         
         if (tabMatches.length === 0) {
+            tabScrollContainer.style.display = "none";
+
+            const content = createDiv({ parent: contentContainer, cls: "selected" })
+            MarkdownRenderer.render(this.plugin.app, markdown, content, ctx.sourcePath, this.plugin);
             
+            if (!this.plugin.settings.hideNoTabWarning) {
+                const warning = "> [!WARNING] No tabs created\n> To create tabs, use \`--- Tab Name\`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
+                MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
+            }
+            return;
         }
         
         let defaultTab = 0;
