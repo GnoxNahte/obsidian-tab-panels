@@ -1,7 +1,6 @@
 import { MarkdownPostProcessorContext, MarkdownRenderer } from "obsidian";
 import TabPanelsPlugin from "./main";
 
-
 export class TabPanelsBuilder {
     plugin: TabPanelsPlugin;
 
@@ -26,13 +25,15 @@ export class TabPanelsBuilder {
         // 1. "^": Asserts start of line
         // 2. "[^\S\r\n]*": Matches zero and unlimited spaces, tabs and any other whitespace characters (e.g. \v, \f, Zero-width space - \u200B). 
         //                  Why never use \s: It matches \n and \r
-        // 3. "---"
+        // 3. "---": match "---"
         // 4. "[^\S\r\n]*": Same as 2.
         // 5. "(.*)": Captures all characters (except line terminators like \n)
         //
         // Note got "[^\S\r\n]*" from https://stackoverflow.com/a/17752989
         const tabMatches = Array.from(markdown.matchAll(/^[^\S\r\n]*---[^\S\r\n]*(.*)/gm));
         
+        // If can't find any matches, 
+        // Just render the content without any tabs and return
         if (tabMatches.length === 0) {
             tabScrollContainer.style.display = "none";
 
@@ -40,7 +41,7 @@ export class TabPanelsBuilder {
             MarkdownRenderer.render(this.plugin.app, markdown, content, ctx.sourcePath, this.plugin);
             
             if (!this.plugin.settings.hideNoTabWarning) {
-                const warning = "> [!WARNING] No tabs created\n> To create tabs, use \`--- Tab Name\`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
+                const warning = "> [!WARNING] No tabs created\n> To create tabs, use `--- Tab Name`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
                 MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
             }
             return;
@@ -50,23 +51,32 @@ export class TabPanelsBuilder {
 
         for (let i = 0; i < tabMatches.length; i++) {
             const tabMatch = tabMatches[i];
-            // Create tab
+            // === Create tab ===
+            // Get tab title
             let tabText = tabMatch[1];
+            
+            // Set default tab
             const getDefaultPosRegex = tabText.match(/\(default\)\s*$/i);
             if (getDefaultPosRegex) {
                 defaultTab = i;
                 tabText = tabText.substring(0, getDefaultPosRegex.index);
             }
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
-            tab.addEventListener("click", () => this.switchTab(i, tabsContainer, contentContainer))
 
+            tab.addEventListener("click", () => this.switchTab(i, tabsContainer, contentContainer))
             createEl("span", { parent: tab, text: tabText.trim() })
-            
+
+            // === Create content ===
+            // Get where the content for this markdown ends
+            // If 
+            // - is NOT last tab, get the start of the next tab
+            // - is last tab, get until the end of the string
             const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : undefined;
             let contentMarkdown = markdown.substring(tabMatch.index, contentMarkdownEnd);
-            contentMarkdown = contentMarkdown.substring(contentMarkdown.indexOf("\n"))
+            // Remove the first line ("--- Tab Name")
+            contentMarkdown = contentMarkdown.substring(contentMarkdown.indexOf("\n"));
             
-            const content = createDiv({ parent: contentContainer })
+            const content = createDiv({ parent: contentContainer });
             MarkdownRenderer.render(this.plugin.app, contentMarkdown, content, ctx.sourcePath, this.plugin);
         }
 

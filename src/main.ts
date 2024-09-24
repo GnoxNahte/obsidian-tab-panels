@@ -10,7 +10,10 @@ export default class TabPanelsPlugin extends Plugin {
 		await this.loadSettings();
 		
 		this.tabPanelBuilder = new TabPanelsBuilder(this);
-		this.registerCodeBlock(this.settings.codeblockKeyword);
+		this.registerMarkdownCodeBlockProcessor(
+			this.settings.codeblockKeyword, 
+			(src, el, ctx)=>this.tabPanelBuilder.create(src, el, ctx)
+		);
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new TabPanelsTab(this.app, this));
@@ -22,9 +25,5 @@ export default class TabPanelsPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-
-	registerCodeBlock(keyword: string) {
-		this.registerMarkdownCodeBlockProcessor(keyword, (a,b,c)=>this.tabPanelBuilder.create(a,b,c));
 	}
 }

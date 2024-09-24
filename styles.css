@@ -30,7 +30,6 @@
 
         box-shadow: 0 5px 0 -1px var(--background-primary),
                     0 5px var(--background-modifier-border);
-        /* 0.4px 5px var(--background-modifier-border);; */
     }
 }
 
@@ -49,7 +48,7 @@ ul.tab-container {
     white-space: nowrap;
     margin-inline-start: 0;
 
-    padding: 0.2em 1em;
+    padding: 0.2em 1em 0.6em;
 
     border-top-left-radius: 0.5em;
     border-top-right-radius: 0.5em;
