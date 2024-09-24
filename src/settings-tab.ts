@@ -4,12 +4,18 @@ import TabPanelsPlugin from "./main";
 export interface TabPanelsSettings {
 	codeblockKeyword: string;
     hideNoTabWarning: boolean;
+
+    // Styling
+    highlightSelectedTabName: boolean;
     // animation
 }
 
 export const DEFAULT_SETTINGS: TabPanelsSettings = {
 	codeblockKeyword: 'tab-panels',
     hideNoTabWarning: false,
+
+    // Styling
+    highlightSelectedTabName: true,
 }
 
 export class TabPanelsTab extends PluginSettingTab {
@@ -48,5 +54,29 @@ export class TabPanelsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
             )
+
+        new Setting(containerEl)
+            .setHeading()
+            .setName("Styling");
+        
+        new Setting(containerEl)
+            .setName("Highlight selected tab name")
+            .addToggle(toggle => toggle
+                .setValue(settings.highlightSelectedTabName)
+                .onChange(async (value) => {
+                    settings.highlightSelectedTabName = value;
+                    await this.plugin.saveSettings();
+                })
+            )
+            
+        const additionalInfo = new DocumentFragment();
+        additionalInfo.appendText("Reload the app to apply changes");
+        additionalInfo.appendChild(createEl("br"))
+        additionalInfo.appendChild(createEl("br"))
+        additionalInfo.appendText("Found bugs or want a feature? ");
+        additionalInfo.appendChild(createEl("a", {text: "Create a GitHub issue!", href: "https://github.com/GnoxNahte/obsidian-tab-panels/issues/new"}))
+
+        new Setting(containerEl)
+            .setDesc(additionalInfo)
 	}
 }

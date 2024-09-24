@@ -86,10 +86,10 @@ ul.tab-container {
             border-radius: 100%;
         }
     }
+}
 
-    &:focus {
-        color: var(--color-accent);
-    }
+.highlight-selected-tab-name li.selected.tab {
+    color: var(--color-accent);
 }
 
 div.content-container {

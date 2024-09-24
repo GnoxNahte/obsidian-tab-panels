@@ -12,6 +12,10 @@ export class TabPanelsBuilder {
     create(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
         container.classList.add("tab-panel-container");
 
+        if (this.plugin.settings.highlightSelectedTabName) {
+            container.classList.add("highlight-selected-tab-name");
+        }
+
         const tabScrollContainer = createEl("div", { cls: "tab-scroll-container", parent: container });
         const tabsContainer = createEl("ul", { cls: "tab-container", parent: tabScrollContainer });
         const contentContainer = createDiv({ cls: "content-container", parent: container });
