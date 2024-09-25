@@ -35,7 +35,7 @@ export class TabPanelsBuilder {
         // If can't find any matches, 
         // Just render the content without any tabs and return
         if (tabMatches.length === 0) {
-            tabScrollContainer.style.display = "none";
+            tabScrollContainer.classList.add("hide-container")
 
             const content = createDiv({ parent: contentContainer, cls: "selected" })
             MarkdownRenderer.render(this.plugin.app, markdown, content, ctx.sourcePath, this.plugin);
