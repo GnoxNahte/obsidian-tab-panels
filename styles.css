@@ -1,7 +1,7 @@
 .tab-panel-container {
     display: flex;
     flex-direction: column;
-    --padding-dist: 1em;
+    --padding-dist: 0.8em;
     --outer-border-radius: 1.5em;
     --inner-border-radius: calc(var(--outer-border-radius) - var(--padding-dist));
     padding: var(--padding-dist);
@@ -14,6 +14,7 @@
 .tab-scroll-container {
     overflow-x: auto;
     overflow-y: hidden;
+    scroll-behavior: smooth;
 
     &::-webkit-scrollbar-track-piece {
         margin-left: 3px;
@@ -103,11 +104,11 @@ div.content-container {
         display: none;
     }
 
-    & p:first-child {
+    & *:first-child {
         margin-top: 0 !important;
     }
 
-    & p:last-child {
+    & *:last-child {
         margin-bottom: 0 !important;
     }
 }

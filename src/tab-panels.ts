@@ -80,10 +80,10 @@ export class TabPanelsBuilder {
             MarkdownRenderer.render(this.plugin.app, contentMarkdown, content, ctx.sourcePath, this.plugin);
         }
 
-        this.switchTab(defaultTab, tabsContainer, contentContainer);
+        this.switchTab(defaultTab, tabsContainer, contentContainer, true);
     }
 
-    switchTab(tabIndex: number, tabsContainer: HTMLUListElement, contentContainer: HTMLDivElement) {
+    switchTab(tabIndex: number, tabsContainer: HTMLUListElement, contentContainer: HTMLDivElement, isSetup = false) {
         const selectedClass = "selected"
 
         // Set all tabs to be hidden
@@ -99,8 +99,41 @@ export class TabPanelsBuilder {
             const content = contents[i];
             content.classList.remove(selectedClass)
         }
+
+        const selectedTab = tabs[tabIndex] as HTMLElement;
         // Remove hidden from active tab
-        tabs[tabIndex].classList.add(selectedClass);
-        contents[tabIndex]?.classList.add(selectedClass);
+        selectedTab.classList.add(selectedClass);
+        contents[tabIndex].classList.add(selectedClass);
+        
+        if (!isSetup || tabIndex === 0)
+            return;
+
+        // === Scroll to the default (selected) tab ===
+        const scrollElement = tabsContainer.parentElement;
+        if (scrollElement === null) {
+            console.error("Cannot find scroll element");
+            return;
+        }
+        
+        // TODO: Find a better solution than setting a timeout
+        // Set the scroll pos
+        function SetScrollPos() {
+            // Need a timeout as sometimes it hasn't been fully loaded yet
+            setTimeout(() => {
+                if (tabsContainer.parentElement === null)
+                    return;
+
+                const targetedPos = selectedTab.offsetLeft;
+
+                tabsContainer.parentElement.scrollLeft = targetedPos - 35;
+                // When it hasn't been rendered, the scrollLeft value won't be set and stay at 0
+                // Should have a better solution
+                if (tabsContainer.parentElement.scrollLeft === 0) {
+                    SetScrollPos();
+                }
+            }, 100);
+        }
+
+        SetScrollPos();
     }
 }
