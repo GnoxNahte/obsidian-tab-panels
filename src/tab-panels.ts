@@ -71,8 +71,8 @@ export class TabPanelsBuilder {
             // If 
             // - is NOT last tab, get the start of the next tab
             // - is last tab, get until the end of the string
-            const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : undefined;
-            let contentMarkdown = markdown.substring(tabMatch.index, contentMarkdownEnd);
+            const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : markdown.length;
+            let contentMarkdown = markdown.substring(tabMatch.index ?? 0, contentMarkdownEnd);
             // Remove the first line ("--- Tab Name")
             contentMarkdown = contentMarkdown.substring(contentMarkdown.indexOf("\n"));
             
