@@ -50,5 +50,9 @@ This is an Obsidian bug where if the code block is very long, Obsidian does not 
 ## 🛤️ Roadmap
 Please [suggest any features](../../issues/new/choose) you want!
 
+## 💬 Feedback
+Have some feedback? Create a GitHub issue: [Bug report](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml) or [Feature request](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=feature-request.md)
+Questions (e.g. unsure how to use the plugin): [GitHub discussions](https://github.com/GnoxNahte/obsidian-tab-panels/discussions)
+
 ## 🌟 Credits
-- Syntax (Defining tabs by using `--- Tab Name`) was inspired by [Obsidian HTML Tabs]([url](https://github.com/ptournet/obsidian-html-tabs)) by [ptournet](https://github.com/ptournet)
+- [Syntax](#-syntax) was inspired by [Obsidian HTML Tabs](https://github.com/ptournet/obsidian-html-tabs), made by [ptournet](https://github.com/ptournet)
