@@ -64,7 +64,7 @@ export class TabPanelsBuilder {
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
 
             tab.addEventListener("click", () => this.switchTab(i, tabsContainer, contentContainer))
-            createEl("span", { parent: tab, text: tabText.trim() })
+            MarkdownRenderer.render(this.plugin.app, tabText, tab, ctx.sourcePath, this.plugin);
 
             // === Create content ===
             // Get where the content for this markdown ends
