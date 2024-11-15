@@ -48,36 +48,66 @@ export class TabPanelsBuilder {
         }
         
         let defaultTab = 0;
+        // Might be different from tabMatches.length as there might be nested tab panels
+        // Incrementing at the start of the loop so start at -1.
+        let tabIndex = -1; 
 
         for (let i = 0; i < tabMatches.length; i++) {
-            const tabMatch = tabMatches[i];
+            ++tabIndex;
+
             // === Create tab ===
             // Get tab title
-            let tabText = tabMatch[1];
+            let tabText = tabMatches[i][1];
             
             // Set default tab
             const getDefaultPosRegex = tabText.match(/\(default\)\s*$/i);
             if (getDefaultPosRegex) {
-                defaultTab = i;
+                defaultTab = tabIndex;
                 tabText = tabText.substring(0, getDefaultPosRegex.index);
             }
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
 
-            tab.addEventListener("click", () => this.switchTab(i, tabsContainer, contentContainer))
+            const currTabIndex = tabIndex; // If pass in tabIndex directly, it'll keep returning the number of tabs 
+            tab.addEventListener("click", () => this.switchTab(currTabIndex, tabsContainer, contentContainer))
             MarkdownRenderer.render(this.plugin.app, tabText, tab, ctx.sourcePath, this.plugin);
 
             // === Create content ===
-            // Get where the content for this markdown ends
-            // If 
-            // - is NOT last tab, get the start of the next tab
-            // - is last tab, get until the end of the string
-            const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : markdown.length;
-            let contentMarkdown = markdown.substring(tabMatch.index ?? 0, contentMarkdownEnd);
-            // Remove the first line ("--- Tab Name")
-            contentMarkdown = contentMarkdown.substring(contentMarkdown.indexOf("\n"));
+            const getMarkdown = (removeTab: boolean): string => {
+                // Get where the content for this markdown ends
+                // If 
+                // - is NOT last tab, get the start of the next tab
+                // - is last tab, get until the end of the string
+                const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : markdown.length;
+                const contentMarkdown = markdown.substring(tabMatches[i].index ?? 0, contentMarkdownEnd);
+                // Remove the first line ("--- Tab Name")
+                if (removeTab)
+                    return contentMarkdown.substring(contentMarkdown.indexOf("\n"));
+                else
+                    return contentMarkdown;
+            }
+            
+            let resultMarkdown = getMarkdown(true);
+
+            // If codeblocks haven't complete, might be nesting tab panels
+            let count = 0;
+            do {
+                ++count;
+                // Check for any ``` OR ~~~, allowing any space before it.
+                const codeblocks = resultMarkdown.match(/^ *~{3}|`{3}/gm);
+                const hasTrailingCodeblocks = codeblocks !== null && codeblocks.length % 2 === 1;
+
+                if (hasTrailingCodeblocks && i + 1 < tabMatches.length) {
+                    ++i;
+                    resultMarkdown += getMarkdown(false);
+                    continue;
+                }
+                else {
+                    break;
+                }
+            } while (count < 20)
             
             const content = createDiv({ parent: contentContainer });
-            MarkdownRenderer.render(this.plugin.app, contentMarkdown, content, ctx.sourcePath, this.plugin);
+            MarkdownRenderer.render(this.plugin.app, resultMarkdown, content, ctx.sourcePath, this.plugin);
         }
 
         this.switchTab(defaultTab, tabsContainer, contentContainer, true);
@@ -99,10 +129,9 @@ export class TabPanelsBuilder {
             const content = contents[i];
             content.classList.remove(selectedClass)
         }
-
         const selectedTab = tabs[tabIndex] as HTMLElement;
         // Remove hidden from active tab
-        selectedTab.classList.add(selectedClass);
+        selectedTab.classList.add(selectedClass); 
         contents[tabIndex].classList.add(selectedClass);
         
         if (!isSetup || tabIndex === 0)
