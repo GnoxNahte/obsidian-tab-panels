@@ -7,13 +7,17 @@ export default class TabPanelsPlugin extends Plugin {
 	settings: TabPanelsSettings;
 	tabPanelBuilder: TabPanelsBuilder;
 
+	isCacheLoaded: boolean;
+
 	// Event handlers
+	// Do this to unsubscribe the event when unloading plugin
 	onMetadataCacheChangedHandler = this.onMetadataCacheChanged.bind(this);
 	onFileRenamedHandler = this.onFileRenamed.bind(this);
 	onFileDeleteHandler = this.onFileDelete.bind(this);
 	debug_outputMetadataCacheHandler = this.debug_outputMetadataCache.bind(this);
 
 	async onload() {
+		this.isCacheLoaded = false;
 		console.log("Loading tab panels plugin")
 		await this.loadSettings();
 
@@ -25,7 +29,10 @@ export default class TabPanelsPlugin extends Plugin {
 
 		// Caching
 		if (this.settings.enableCaching) {
-			this.app.workspace.onLayoutReady(async () => updateCacheFromSettings(this.settings.cacheData, this.app.metadataCache, this.app));
+			this.app.workspace.onLayoutReady(async () => {
+				await updateCacheFromSettings(this.settings.cacheData, this.app.metadataCache, this.app);
+				this.isCacheLoaded = true;
+			});
 			this.app.metadataCache.on("changed", this.onMetadataCacheChangedHandler);
 
 			this.app.vault.on("rename", this.onFileRenamedHandler);
@@ -57,21 +64,23 @@ export default class TabPanelsPlugin extends Plugin {
 	}
 
 	async onMetadataCacheChanged(file: TFile, data: string, cache: CachedMetadata) {
+		if (!this.isCacheLoaded)
+			return;
+
 		await updateCacheFromFile(this, file, data);
 	}
 
 	async onFileRenamed(file: TAbstractFile, oldPath: string) {
-		console.log("FILE RENAMED:\nOLD:", oldPath, "\nNew: ", file.path, "\n", file);
 		updateCacheOnFileRename(this, file, oldPath);
 	}
 
 	async onFileDelete(file: TAbstractFile) {
-		console.log("FILE DELETED:\nFile:", file.path, "\n", file);
 		updateCacheOnFileDelete(this, file)
 	}
 
 	debug_outputMetadataCache(file: TFile) {
-		console.log("Cache:\n", this.app.metadataCache.getCache(file.path), 
+		console.log("File: ", file.path,
+					"Cache:\n", this.app.metadataCache.getCache(file.path), 
 					"\nResolved links", this.app.metadataCache.resolvedLinks, 
 					"\nUnresolved ", this.app.metadataCache.unresolvedLinks)
 	}

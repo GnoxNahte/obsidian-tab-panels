@@ -92,13 +92,14 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
     const settingsCacheData = plugin.settings.cacheData;
 
     // ===== Reset =====
-    cachedMetadata.links = [];
+    // cachedMetadata.links = [];
     settingsCacheData.data[file.path] = [];
     // Links
-    metadataCache.resolvedLinks[file.path] = {};
-    metadataCache.unresolvedLinks[file.path] = {};
+    // metadataCache.resolvedLinks[file.path] = {};
+    // metadataCache.unresolvedLinks[file.path] = {};
 
     // Regex to get the markdown content
+    // Note that there can be 3 or more backticks and the start and end backticks need to match
     // Regex101: https://regex101.com/r/OZVkPd/1
     // ===== Breakdown =====
     // ^: Start of string
@@ -115,8 +116,11 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
     // but obsidian seems to accept them so I've just allowed them.
     // Might have other weird combinations too that Obsidian accepts but this regex don't
     // 
-    // TODO: Make it dynamic for the codeblockKeyword.
-    const regex = /^ {0,3}(`{3,}|~{3,}) *tabs[ \w]*\n([\s\S]*?)\1/gm;
+    // Original regex:
+    // const regex = /^ {0,3}(`{3,}|~{3,}) *tabs[ \w]*\n([\s\S]*?)\1/gm;
+    // Changed it slightly to make it fit RegExp and the template literal (`${value}`). 
+    // Added '\' before backticks (`) and slashes (\)
+    const regex = new RegExp(`^ {0,3}(\`{3,}|~{3,}) *${plugin.settings.codeblockKeyword}[ \\w]*\n([\\s\\S]*?)\\1`, 'gm')
 
     const matches = [...markdown.matchAll(regex)];
     
