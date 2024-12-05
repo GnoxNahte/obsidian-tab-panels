@@ -6,7 +6,7 @@
  * - src/util/parsing.ts
  */
 
-import { App, CachedMetadata, LinkCache, Loc, MetadataCache, TFile } from "obsidian";
+import { App, CachedMetadata, LinkCache, Loc, MetadataCache, TAbstractFile, TFile } from "obsidian";
 import TabPanelsPlugin from "src/main";
 
 export interface CacheData {
@@ -45,6 +45,29 @@ export async function updateCacheFromSettings(data: CacheData, metadataCache: Me
         }
 
         metadataCache.trigger("resolve", app.vault.getFileByPath(path));
+    }
+}
+
+export async function updateCacheOnFileRename(plugin: TabPanelsPlugin, file: TAbstractFile, oldPath: string) {
+    const settingsData = plugin.settings.cacheData;
+
+    // Change the key by copying it over then deleting the old key
+    if (settingsData.data[oldPath])
+    {
+        settingsData.data[file.path] = settingsData.data[oldPath];
+        delete settingsData.data[oldPath];
+        plugin.saveSettings();
+    }
+}
+
+export async function updateCacheOnFileDelete(plugin: TabPanelsPlugin, file: TAbstractFile) {
+    const settingsData = plugin.settings.cacheData;
+    
+    // Change the key by copying it over then deleting the old key
+    if (settingsData.data[file.path])
+    {
+        delete settingsData.data[file.path];
+        plugin.saveSettings();
     }
 }
 
@@ -109,7 +132,9 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
         const locOffset: Loc = {
             line: lineNumber,
             col: 0,
-            offset: match.index,
+            // + Match[1]: Number of backticks (`) or tilde (~)
+            // + 5: Not sure what it represents... Just tested it and it works
+            offset: match.index + match[1].length + 5,
         }
 
         // Get second capture group and update the cache
