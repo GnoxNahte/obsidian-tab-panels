@@ -6,94 +6,130 @@
  * - src/util/parsing.ts
  */
 
-import { App, CachedMetadata, LinkCache, Loc, MetadataCache, TAbstractFile, TFile } from "obsidian";
+import { App, CachedMetadata, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, ReferenceCache, TAbstractFile, TagCache, TFile } from "obsidian";
 import TabPanelsPlugin from "src/main";
 
+export type DataCache = Record<string, CacheData>;
+
+interface TabsCache {
+    isFromTabPanels: boolean;
+}
+
+export interface TabsLinkCache extends LinkCache, TabsCache {}
+export interface TabsEmbedCache extends EmbedCache, TabsCache {}
+
 export interface CacheData {
-    data: Record<string, LinkCache[]>;
+    // Copied from Obsidian's CachedData
+    links?: LinkCache[];
+    embeds?: EmbedCache[];
+    tags?: TagCache[];
+    headings?: HeadingCache[];
+    footnotes?: FootnoteCache[];
+
+    // === NOT USING ===
+    // sections?: SectionCache[];
+    // listItems?: ListItemCache[];
+    // frontmatter?: FrontMatterCache;
+    // frontmatterPosition?: Pos;
+    // frontmatterLinks?: FrontmatterLinkCache[];
+    // blocks?: Record<string, BlockCache>;
 }
 
 // Update the cache from the data in settings
 // Called onload
-export async function updateCacheFromSettings(data: CacheData, metadataCache: MetadataCache, app: App) {
-    for (const path in data.data) {
+export async function updateCacheFromSettings(settingsData: DataCache, metadataCache: MetadataCache, app: App) {
+    for (const path in settingsData) {
         const cachedMetadata = metadataCache.getCache(path);
         if (!cachedMetadata) {
             console.error("metadataCache.getCache(", path, ") = ", cachedMetadata)    
             continue;
         }
         
-        // Add the cache from settings to Obsidian's cached metadata
-        const linkCache = data.data[path];
-        if (cachedMetadata.links)
-            cachedMetadata.links?.push(...linkCache);
-        else
-            cachedMetadata.links = linkCache;
+        // Add the cached links in settings to Obsidian's cache
+        const linkCache = settingsData[path].links;
+        if (linkCache) {
+            if (cachedMetadata.links)
+                cachedMetadata.links.push(...linkCache);
+            else
+                cachedMetadata.links = linkCache;
 
-        rebuildResolvedLinks(cachedMetadata, 
-            metadataCache, 
-            metadataCache.resolvedLinks[path],
-            metadataCache.unresolvedLinks[path]);
+            // rebuildResolvedLinks(cachedMetadata, 
+            //     metadataCache, 
+            //     metadataCache.resolvedLinks[path],
+            //     metadataCache.unresolvedLinks[path]);
+        }
+
+        const embedCache = settingsData[path].embeds;
+        if (embedCache) {
+            if (cachedMetadata.embeds)
+                cachedMetadata.embeds.push(...embedCache);
+            else 
+                cachedMetadata.embeds = embedCache;
+        }
+
+        // TODO: Add headings, embeds, etc to Obsidian's cache
         
+        // Trigger Obsidian events to reload the UI and update any other plugin that uses the metadataCache
         const file = app.vault.getFileByPath(path);
         if (file) { 
             const markdown = await app.vault.cachedRead(file);
             metadataCache.trigger("changed", app.vault.getFileByPath(path), markdown);
+            metadataCache.trigger("resolve", app.vault.getFileByPath(path));
         }
         else {
             console.error("Cannot find file.\n Path: ", path);
         }
-
-        metadataCache.trigger("resolve", app.vault.getFileByPath(path));
     }
 }
 
 export async function updateCacheOnFileRename(plugin: TabPanelsPlugin, file: TAbstractFile, oldPath: string) {
-    const settingsData = plugin.settings.cacheData;
+    const settingsData = plugin.settings.dataCache;
 
     // Change the key by copying it over then deleting the old key
-    if (settingsData.data[oldPath])
+    if (settingsData[oldPath])
     {
-        settingsData.data[file.path] = settingsData.data[oldPath];
-        delete settingsData.data[oldPath];
+        settingsData[file.path] = settingsData[oldPath];
+        delete settingsData[oldPath];
         plugin.saveSettings();
     }
 }
 
 export async function updateCacheOnFileDelete(plugin: TabPanelsPlugin, file: TAbstractFile) {
-    const settingsData = plugin.settings.cacheData;
+    const settingsData = plugin.settings.dataCache;
     
-    // Change the key by copying it over then deleting the old key
-    if (settingsData.data[file.path])
+    // Delete the entry if it exists
+    if (settingsData[file.path])
     {
-        delete settingsData.data[file.path];
+        delete settingsData[file.path];
         plugin.saveSettings();
     }
 }
 
-// Also saves settings
+// Go through the whole vault and rebuild the whole cache in the settings.
 // TODO
-export async function rebuildVaultCache(data: CacheData, plugin: TabPanelsPlugin) {
-    data.data = {};
+export async function rebuildVaultCache(settingsData: DataCache, plugin: TabPanelsPlugin) {
+    settingsData = {};
     
     await plugin.saveSettings();
 }
 
 // Parses the markdown, update the Obsidian's metadataCache and saves the result in settings
-export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, markdown: string) {
+export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, markdown: string, cachedMetadata: CachedMetadata) {
     const metadataCache = plugin.app.metadataCache;
-    const cachedMetadata = metadataCache.getFileCache(file);
 
-    if (cachedMetadata === null) {
-        console.warn("No cache");
-        return;
+    // Sometimes it'll return the previous cache. So to prevent adding new data to the previous data, filter out all the data from this plugin
+    if (cachedMetadata.links) {
+        cachedMetadata.links = cachedMetadata.links.filter((value) => !(value as TabsLinkCache).isFromTabPanels)
     }
 
-    const settingsCacheData = plugin.settings.cacheData;
-
+    const settingsCacheData = plugin.settings.dataCache;
+    
     // ===== Reset =====
     // cachedMetadata.links = [];
-    settingsCacheData.data[file.path] = [];
+    settingsCacheData[file.path] = {};
+    // if (settingsCacheData[file.path]) {
+    //     settingsCacheData[file.path].links = [];
+    // }
     // Links
     // metadataCache.resolvedLinks[file.path] = {};
     // metadataCache.unresolvedLinks[file.path] = {};
@@ -128,6 +164,8 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
     let lastIndex = 0;
     let lineNumber = 1;
 
+    let hasItemsToCache = false;
+
     for (const match of matches) {
         const textBefore = markdown.slice(lastIndex, match.index);
         lastIndex = match.index;
@@ -142,129 +180,162 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
         }
 
         // Get second capture group and update the cache
-        updateCache(metadataCache, cachedMetadata, settingsCacheData, file.path, match[2], locOffset);
+        const codeblockMarkdown = match[2];
+        const hasItemsInCache = updateCache(metadataCache, cachedMetadata, file.path, codeblockMarkdown, locOffset, settingsCacheData[file.path]);
+        if (hasItemsInCache)
+            hasItemsToCache = true;
     }
 
-    const settingsCacheForFile = settingsCacheData.data[file.path];
-    if (settingsCacheForFile && settingsCacheForFile.length === 0)  {
-        delete settingsCacheData.data[file.path];
-    }
-
+    // If there's no items in the file, delete it from the cache
+    if (!hasItemsToCache && settingsCacheData[file.path]) {
+        delete settingsCacheData[file.path];
+    } 
+ 
     await plugin.saveSettings();
 }
 
-export function updateCache(metadataCache: MetadataCache, cachedMetadata: CachedMetadata, settingsCacheData: CacheData, path: string, markdown: string, locOffset: Loc) {
+// Returns true if it has items to put in the cache
+export function updateCache(metadataCache: MetadataCache, cachedMetadata: CachedMetadata, path: string, markdown: string, locOffset: Loc, outSettingsCacheData: CacheData): boolean {
     
-    rebuildCacheMetadata(cachedMetadata, settingsCacheData, path, markdown, locOffset);
+    const hasItemsToCache = rebuildCacheMetadata(cachedMetadata, markdown, locOffset, outSettingsCacheData);
     
-    rebuildResolvedLinks(cachedMetadata, metadataCache,
-                    metadataCache.resolvedLinks[path],
-                    metadataCache.unresolvedLinks[path]);
-}
+    // TODO: Not sure if need to update??
+    // if (hasItemsToCache){
+    //     rebuildResolvedLinks(cachedMetadata, metadataCache,
+    //                     metadataCache.resolvedLinks[path],
+    //                     metadataCache.unresolvedLinks[path]);
+    // }
 
-// function getLinks(markdown: string): string[] {
-//     return Array.from(
-//         markdown.matchAll(/\[\[(.*?)\]\]/g),
-//         value => value[1] // Remaps it, just returning the first capture group
-//     );
-// }
+    return hasItemsToCache;
+}
 
 //#region Rebuilding CacheMetadata (From metadataCache.getFileCache)
-function rebuildCacheMetadata(cachedMetadata: CachedMetadata, settingsCacheData: CacheData, path: string, markdown: string, locOffset: Loc) {
-    const result = parseLinks(markdown, locOffset);
+// Rebuilds the cache data, modifying outSettingsCacheData
+// Returns true if it has items to put in the cache
+function rebuildCacheMetadata(cachedMetadata: CachedMetadata, markdown: string, locOffset: Loc, outSettingsCacheData: CacheData): boolean {
+    parseLinks(markdown, locOffset, outSettingsCacheData);
 
-    if (!result || result.length === 0)
-        return;
+    // If it didn't change anything,
+    if (!outSettingsCacheData || Object.keys(outSettingsCacheData).length === 0)
+        return false;
 
-    if (!cachedMetadata.links)
-        cachedMetadata.links = result;
-    else 
-        cachedMetadata.links?.push(...result);
+    // ===== Add result to Obsidian's cache =====
+    // TODO: Some code is repetitive, find a way to simplify it. Maybe add function with templates
+    // Add links
+    if (outSettingsCacheData.links && outSettingsCacheData.links.length > 0) {
+        const tabsLinkCache: TabsLinkCache[] = outSettingsCacheData.links.map((cache) => ({ ...cache, isFromTabPanels: true }));
+        if (!cachedMetadata.links){
+            cachedMetadata.links = tabsLinkCache;
+        }
+        else {
+            cachedMetadata.links?.push(...tabsLinkCache);
+        }
+    }
 
-    if (!settingsCacheData.data[path])
-        settingsCacheData.data[path] = result;
-    else 
-        settingsCacheData.data[path].push(...result);
+    // Add embeds
+    if (outSettingsCacheData.embeds && outSettingsCacheData.embeds.length > 0) {
+        const tabsEmbedCache: TabsEmbedCache[] = outSettingsCacheData.embeds.map((cache) => ({ ...cache, isFromTabPanels: true }));
+        if (!cachedMetadata.embeds){
+            cachedMetadata.embeds = tabsEmbedCache;
+        }
+        else {
+            cachedMetadata.embeds?.push(...tabsEmbedCache);
+        }
+    }
+
+    return true;
 }
 
-function parseLinks(markdown: string, locOffset: Loc): LinkCache[] {
+function parseLinks(markdown: string, locOffset: Loc, outCacheData: CacheData) {
     const lines = markdown.split("\n");
     let offset = 0;
-    let linksCache: LinkCache[] = [];
     lines.forEach((line, lineNumber) => {
-        linksCache = linksCache.concat(parseLinksByLine(line, locOffset.line + lineNumber, locOffset.offset + offset));
+        parseLinksByLine(line, locOffset.line + lineNumber, locOffset.offset + offset, outCacheData);
         offset += line.length + 1;
     })
-    return linksCache;
 }
 
-function parseLinksByLine(markdown: string, lineNumber: number, offset: number): LinkCache[] {
-    const linkRegex = /(?<!!)\[\[([^|\]]+)(\|([^\]]+))?\]\]/g;
+function parseLinksByLine(markdown: string, lineNumber: number, offset: number, outCacheData: CacheData)  {
+    const linkRegex = /!?\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g;
 	const matches: RegExpMatchArray[] = [...markdown.matchAll(linkRegex)];
 	if (matches.length > 0) {
-        const result: LinkCache[] = [];
-		matches.forEach(function (match: RegExpMatchArray) {
+        const links: LinkCache[] = [];
+        const embeds: EmbedCache[] = [];
+		matches.forEach((match: RegExpMatchArray) => {
 			const col = match.index ? match.index : 0;
 			const start: Loc = {
 				line: lineNumber,
 				col: col,
 				offset: offset + col,
 			};
-			const linkCache: LinkCache = {
-				link: match.groups ? match.groups.link : match[1],
-				original: match[0],
-				position: {
+            
+            // Note: Pushing into links and embeds array which are LinkCache[] and EmbedCache[]. Both inherits from ReferenceCache
+            const cache: ReferenceCache = {
+                link: match[1],
+                original: match[0],
+                // Get display text (filename|display text). If there's no display text, assign the original text
+                displayText: match[2] ?? match[1],
+                position: {
                     start: start,
-					end: {
+                    end: {
                         line: start.line,
-						col: start.col + match[0].length,
-						offset: start.offset + match[0].length,
-					},
-				},
-			};
-
-			if (match.groups && match.groups.display) {
-				linkCache.displayText = match.groups.display;
-			}
-
-			result.push(linkCache);
+                        col: start.col + match[0].length,
+                        offset: start.offset + match[0].length,
+                    },
+                },
+            };
+            
+            // If link
+            if (match[0][0] !== "!")
+                links.push(cache);
+            // If embed
+            else
+                embeds.push(cache);
 		});
+        
+        if (outCacheData.links) 
+            outCacheData.links.push(...links);
+        else
+            outCacheData.links = links;
 
-        return result;
+        if (outCacheData.embeds)
+            outCacheData.embeds.push(...embeds);
+        else
+            outCacheData.embeds = embeds;
 	}
-
-    return [];
 }
 //#endregion
 
 // Rebuilding resolved and unresolved links (metadataCache.resolvedLinks and metadataCache.unresolvedLinks)
 // Adds the links to the outResolvedLinks and outUnresolvedLinks arrays.
-function rebuildResolvedLinks(cachedMetadata: CachedMetadata, metadataCache: MetadataCache, outResolvedLinks: Record<string, number>, outUnresolvedLinks: Record<string, number>) {
-    const links = cachedMetadata.links;
+// function rebuildResolvedLinks(cachedMetadata: CachedMetadata, metadataCache: MetadataCache, outResolvedLinks: Record<string, number>, outUnresolvedLinks: Record<string, number>) {
+//     const links = cachedMetadata.links;
 
-    if (!links)
-        return;
+//     if (!links)
+//         return;
 
-    links.forEach((linkCache) => {
-        const link = linkCache.link;
-        const file = metadataCache.getFirstLinkpathDest(link, "");
-        let path = "";
-        let linksRef: Record<string, number>;
+//     links.forEach((linkCache) => {
+//         const link = linkCache.link;
+//         const file = metadataCache.getFirstLinkpathDest(link, "");
+//         let path = "";
+//         let linksRef: Record<string, number>;
 
-        // If can't find file, add to unresolvedLinks
-        if (file === null) {
-            linksRef = outUnresolvedLinks;
-            path = link;
-        }
-        // If can find file, add to resolved links
-        else {
-            linksRef = outResolvedLinks;
-            path = file.path;
-        }
+//         // If can't find file, add to unresolvedLinks
+//         if (file === null) {
+//             linksRef = outUnresolvedLinks;
+//             path = link;
+//         }
+//         // If can find file, add to resolved links
+//         else {
+//             linksRef = outResolvedLinks;
+//             path = file.path;
+//         }
 
-        if (linksRef[path] === undefined)
-            linksRef[path] = 0;
+//         if (linksRef[path] === undefined) 
+//             console.warn("Reset")
+//         if (linksRef[path] === undefined) 
+//             linksRef[path] = 0;
         
-        linksRef[path]++;
-    })
-}
+//         linksRef[path]++;
+//     })
+// }

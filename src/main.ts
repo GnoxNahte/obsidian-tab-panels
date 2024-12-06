@@ -30,7 +30,7 @@ export default class TabPanelsPlugin extends Plugin {
 		// Caching
 		if (this.settings.enableCaching) {
 			this.app.workspace.onLayoutReady(async () => {
-				await updateCacheFromSettings(this.settings.cacheData, this.app.metadataCache, this.app);
+				await updateCacheFromSettings(this.settings.dataCache, this.app.metadataCache, this.app);
 				this.isCacheLoaded = true;
 			});
 			this.app.metadataCache.on("changed", this.onMetadataCacheChangedHandler);
@@ -67,7 +67,7 @@ export default class TabPanelsPlugin extends Plugin {
 		if (!this.isCacheLoaded)
 			return;
 
-		await updateCacheFromFile(this, file, data);
+		await updateCacheFromFile(this, file, data, cache);
 	}
 
 	async onFileRenamed(file: TAbstractFile, oldPath: string) {
@@ -78,10 +78,11 @@ export default class TabPanelsPlugin extends Plugin {
 		updateCacheOnFileDelete(this, file)
 	}
 
-	debug_outputMetadataCache(file: TFile) {
+	debug_outputMetadataCache(file: TFile, data: string, cache: CachedMetadata) {
 		console.log("File: ", file.path,
 					"Cache:\n", this.app.metadataCache.getCache(file.path), 
 					"\nResolved links", this.app.metadataCache.resolvedLinks, 
 					"\nUnresolved ", this.app.metadataCache.unresolvedLinks)
+		// console.log("RAW CACHE: ", JSON.stringify(cache, null, 2))
 	}
 }
