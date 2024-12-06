@@ -25,7 +25,7 @@ interface TabsTagCache extends TagCache, TabsCache {}
 // 1. Create new function to parse item (Reference parseTagsByLine)
 // 2. Call it in rebuildCacheMetadata()
 // 3. Add updated cache to Obsidian cache, also in rebuildCacheMetadata()
-// 4. Add cache from settings to Obsidian cache (called when plugin loads) in updateCacheFromSettings()
+// 4. Add cache from db to Obsidian cache (called when plugin loads) in updateCacheFromDb()
 
 export interface CacheData {
     // Copied from Obsidian's CachedData
@@ -44,79 +44,59 @@ export interface CacheData {
     // blocks?: Record<string, BlockCache>;
 }
 
-// Update the cache from the data in settings
+// Update Obsidian's cache using data in db
 // Called onload
 export async function updateCacheFromDb(metadataCache: MetadataCache, app: App) {
-    await localforage.iterate(async (cache: CacheData, path: string) => {
-        const cachedMetadata = metadataCache.getCache(path);
-        if (!cachedMetadata) {
-            if (app.vault.getFileByPath(path)) {
-                console.error("Cannot get cacheMetadata from file. Path: ", path);
+    console.log("Tab Panels: Loading cache from Database");
+    const loadCacheTimeLabel = "Tab Panels: Finished loading cache in "
+    console.time(loadCacheTimeLabel);
+    try {
+        await localforage.iterate((cache: CacheData, path: string) => {
+            const cachedMetadata = metadataCache.getCache(path);
+            if (!cachedMetadata) {
+                if (app.vault.getFileByPath(path)) {
+                    console.error("Tab Panels: Cannot get cacheMetadata from file. Path: ", path);
+                }
+                else {
+                    console.warn("Tab Panels: Cannot find file. Path: ", path, "\nRemoving cache from db");
+
+                    // Use this instead of try catch as this function can't be async
+                    localforage.removeItem(path)
+                                .catch(error => console.error("Tab Panels: Error deleting cache from db. File path: ", path, "\nERROR: ", error));
+                }
+
+                return;
+            }
+
+            // Filter out plugin cache
+            filterOutPluginCache(cachedMetadata);
+
+            // Add the cached data to Obsidian's cache
+            addToMetadataCache(cachedMetadata, cache);
+
+            rebuildResolvedLinks(cachedMetadata, metadataCache, path);
+ 
+            // Trigger Obsidian events to reload the UI and update any other plugin that uses the metadataCache
+            const file = app.vault.getFileByPath(path);
+            if (file) {
+                // const markdown = await app.vault.cachedRead(file);
+                // metadataCache.trigger("changed", app.vault.getFileByPath(path), markdown);
+                metadataCache.trigger("resolve", app.vault.getFileByPath(path));
             }
             else {
-                console.warn("Cannot find file. Path: ", path, "\nRemoving cache from db");
-
-                try {
-                    await localforage.removeItem(path);
-                } catch (error) {
-                    console.error("Error deleting cache from db. File path: ", path, "\nERROR: ", error);
-                }
+                console.error("Tab Panels: Cannot find file.\n Path: ", path);
             }
-
-            return;
-        }
-        
-        // ===== Add the cached data in settings to Obsidian's cache =====
-        // Add links
-        const linkCache = cache.links;
-        if (linkCache) {
-            if (cachedMetadata.links)
-                cachedMetadata.links.push(...linkCache);
-            else
-                cachedMetadata.links = linkCache;
-        }
-
-        // Add embeds
-        const embedCache = cache.embeds;
-        if (embedCache) {
-            if (cachedMetadata.embeds)
-                cachedMetadata.embeds.push(...embedCache);
-            else 
-                cachedMetadata.embeds = embedCache;
-        }
-
-        if (linkCache || embedCache) 
-            rebuildResolvedLinks(cachedMetadata, metadataCache, path);
-
-        // Add headings
-        const headingsCache = cache.headings;
-        if (headingsCache) {
-            if (cachedMetadata.headings) {
-                cachedMetadata.headings.push(...headingsCache);
-                // Not sure why need to sort when other metadata don't need to sort
-                // Order doesn't appear correctly in sidebar if never sort
-                cachedMetadata.headings.sort(sortCacheByOffset);
-            }
-            else 
-                cachedMetadata.headings = headingsCache;
-        }
-
-        // Trigger Obsidian events to reload the UI and update any other plugin that uses the metadataCache
-        const file = app.vault.getFileByPath(path);
-        if (file) { 
-            const markdown = await app.vault.cachedRead(file);
-            metadataCache.trigger("changed", app.vault.getFileByPath(path), markdown);
-            metadataCache.trigger("resolve", app.vault.getFileByPath(path));
-        }
-        else {
-            console.error("Cannot find file.\n Path: ", path);
-        }
-    })
+        })
+    } catch (error) {
+        console.error("Tab Panels: Error loading cache from db to cachedMetadata. \nERROR: ", error);
+        return;
+    }
+    console.timeEnd(loadCacheTimeLabel);
 }
 
 export async function updateCacheOnFileRename(file: TAbstractFile, oldPath: string) {
     let dbData: CacheData | null;
-
+    
     try {
         dbData = await localforage.getItem(oldPath);
 
@@ -127,7 +107,7 @@ export async function updateCacheOnFileRename(file: TAbstractFile, oldPath: stri
             await localforage.removeItem(oldPath);
         }
     } catch (error) {
-        console.error("Error updating from db. File path: ", file.path, "\nERROR: ", error);
+        console.error("Tab Panels: Error updating from db. File path: ", file.path, "\nERROR: ", error);
         return;
     }
 }
@@ -137,15 +117,15 @@ export async function updateCacheOnFileDelete(file: TAbstractFile) {
         // Delete the entry
         await localforage.removeItem(file.path);
     } catch (error) {
-        console.error("Error deleting cache from db. File path: ", file.path, "\nERROR: ", error);
+        console.error("Tab Panels: Error deleting cache from db. File path: ", file.path, "\nERROR: ", error);
         return;
     }
 }
 
-// Go through the whole vault and rebuild the whole cache in the settings.
-// TODO
+// Go through the whole vault and rebuild the whole cache in the db.
 export async function rebuildVaultCache(plugin: TabPanelsPlugin) {
     try {
+        const app = plugin.app;
         localforage.clear();
 
         const files = plugin.app.vault.getMarkdownFiles();
@@ -153,35 +133,26 @@ export async function rebuildVaultCache(plugin: TabPanelsPlugin) {
             const markdown = await plugin.app.vault.cachedRead(file);
             const cachedMetadata = plugin.app.metadataCache.getFileCache(file);
             if (!cachedMetadata) {
-                console.error("Error gettings cache for file: " + file.path);
+                console.error("Tab Panels: Error gettings cache for file: " + file.path);
                 continue;
             }
             updateCacheFromFile(plugin, file, markdown, cachedMetadata);
+            
+            // app.metadataCache.trigger("changed", app.vault.getFileByPath(file.path), markdown);
+            app.metadataCache.trigger("resolve", app.vault.getFileByPath(file.path));
         }
     } catch (error) {
-        console.error("Error rebuilding vault cache.\nERROR: ", error);
+        console.error("Tab Panels: Error rebuilding vault cache.\nERROR: ", error);
         return;
     }
 }
 
-// Parses the markdown, update the Obsidian's metadataCache and saves the result in settings
+// Parses the markdown, update the Obsidian's metadataCache and saves the result in db
 export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, markdown: string, cachedMetadata: CachedMetadata) {
     const metadataCache = plugin.app.metadataCache;
     const cacheData: CacheData = {};
     
-    // Sometimes it'll pass in the previous cache. So to prevent adding new data to the previous data, filter out all the data from this plugin
-    if (cachedMetadata.links) {
-        cachedMetadata.links = cachedMetadata.links.filter((value) => !(value as TabsLinkCache).isFromTabPanels)
-    }
-    if (cachedMetadata.embeds) {
-        cachedMetadata.embeds = cachedMetadata.embeds.filter((value) => !(value as TabsEmbedCache).isFromTabPanels)
-    }
-    if (cachedMetadata.headings) {
-        cachedMetadata.headings = cachedMetadata.headings.filter((value) => !(value as TabsHeadingCache).isFromTabPanels)
-    }
-    if (cachedMetadata.tags) {
-        cachedMetadata.tags = cachedMetadata.tags.filter((value) => !(value as TabsTagCache).isFromTabPanels)
-    }
+    filterOutPluginCache(cachedMetadata);
     
     // Regex to get the markdown content
     // Note that there can be 3 or more backticks and the start and end backticks need to match
@@ -250,34 +221,34 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
             await localforage.removeItem(file.path);
         }
     } catch (error) {
-        console.error("Error updating cache in db. File path: ", file.path, "\nERROR: ", error);
+        console.error("Tab Panels: Error updating cache in db. File path: ", file.path, "\nERROR: ", error);
         return;
     }
 }
 
 //#region Rebuilding CacheMetadata (From metadataCache.getFileCache)
-// Rebuilds the cache data, modifying outSettingsCacheData
+// Rebuilds the cache data, modifying outPluginCacheData
 // Returns true if it has items to put in the cache
-function rebuildCacheMetadata(markdown: string, locOffset: Loc, outSettingsCacheData: CacheData): boolean {
+function rebuildCacheMetadata(markdown: string, locOffset: Loc, outPluginCacheData: CacheData): boolean {
     const lines = markdown.split("\n");
     let offset = 0;
     lines.forEach((line, lineNumber) => {
         const currLineNum = locOffset.line + lineNumber;
         const currOffset = locOffset.offset + offset;
-        parseLinksAndEmbedsByLine(line, currLineNum, currOffset, outSettingsCacheData);
-        parseHeadingsByLine(line, currLineNum, currOffset, outSettingsCacheData);
-        parseTagsByLine(line, lineNumber, currOffset, outSettingsCacheData);
+        parseLinksAndEmbedsByLine(line, currLineNum, currOffset, outPluginCacheData);
+        parseHeadingsByLine(line, currLineNum, currOffset, outPluginCacheData);
+        parseTagsByLine(line, lineNumber, currOffset, outPluginCacheData);
         offset += line.length + 1;
     })
 
-    // If there's anything in outSettingsCacheData
-    return outSettingsCacheData && Object.keys(outSettingsCacheData).length > 0;
+    // If there's anything in outPluginCacheData
+    return outPluginCacheData && Object.keys(outPluginCacheData).length > 0;
 }
 
 // Syntax for Links: [[Link]], [[Link|Display name]]
 // Syntax for Embeds: ![[Embed]], [[Embed|Display name]]
 // Links and embeds are similar. Only difference is embeds start with !
-function parseLinksAndEmbedsByLine(markdown: string, lineNumber: number, offset: number, outCacheData: CacheData)  {
+function parseLinksAndEmbedsByLine(markdown: string, lineNumber: number, offset: number, outPluginCacheData: CacheData)  {
     const linkRegex = /!?\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g;
 	const matches: RegExpMatchArray[] = [...markdown.matchAll(linkRegex)];
 	if (matches.length > 0) {
@@ -315,20 +286,20 @@ function parseLinksAndEmbedsByLine(markdown: string, lineNumber: number, offset:
                 embeds.push(cache);
 		});
         
-        if (outCacheData.links) 
-            outCacheData.links.push(...links);
+        if (outPluginCacheData.links) 
+            outPluginCacheData.links.push(...links);
         else
-            outCacheData.links = links;
+            outPluginCacheData.links = links;
 
-        if (outCacheData.embeds)
-            outCacheData.embeds.push(...embeds);
+        if (outPluginCacheData.embeds)
+            outPluginCacheData.embeds.push(...embeds);
         else
-            outCacheData.embeds = embeds;
+            outPluginCacheData.embeds = embeds;
 	}
 }
 
 // Syntax for headings: # Heading, ## Heading 2
-function parseHeadingsByLine(markdown: string, lineNumber: number, offset: number, outCacheData: CacheData) {
+function parseHeadingsByLine(markdown: string, lineNumber: number, offset: number, outPluginCacheData: CacheData) {
     // Regex101 tests: https://regex101.com/r/Tydzgd/1
     const headingRegex = /^[^\S\r\n]*(#{1,6}) +(.*)/m;
     // match[0]: Full string
@@ -342,7 +313,6 @@ function parseHeadingsByLine(markdown: string, lineNumber: number, offset: numbe
             col: col,
             offset: offset + col,
         };
-        console.log("Result: ", match)
         
         const cache: HeadingCache = {
             // Shouldn't have any space at the start, just trim end
@@ -358,15 +328,15 @@ function parseHeadingsByLine(markdown: string, lineNumber: number, offset: numbe
             },
         };
 
-        if (outCacheData.headings)
-            outCacheData.headings.push(cache);
+        if (outPluginCacheData.headings)
+            outPluginCacheData.headings.push(cache);
         else
-        outCacheData.headings = [cache];
+            outPluginCacheData.headings = [cache];
 	}
 }
 
 // Syntax for tags: #tag
-function parseTagsByLine(markdown: string, lineNumber: number, offset: number, outCacheData: CacheData)  {
+function parseTagsByLine(markdown: string, lineNumber: number, offset: number, outPluginCacheData: CacheData)  {
     const tagRegex = /#[^\s~!@#$%^&*()+={}|:;"'<>?`[\]\\,.]+/g;
 	const matches: RegExpMatchArray[] = [...markdown.matchAll(tagRegex)];
 	if (matches.length > 0) {
@@ -393,19 +363,35 @@ function parseTagsByLine(markdown: string, lineNumber: number, offset: number, o
             tags.push(cache);
 		});
         
-        if (outCacheData.tags) 
-            outCacheData.tags.push(...tags);
+        if (outPluginCacheData.tags) 
+            outPluginCacheData.tags.push(...tags);
         else
-            outCacheData.tags = tags;
+            outPluginCacheData.tags = tags;
 	}
 }
 
-function addToMetadataCache(cachedMetadata: CachedMetadata, outSettingsCacheData: CacheData) {
+// Sometimes it'll pass in the previous cache. So to prevent adding new data to the previous data, filter out all the data from this plugin
+function filterOutPluginCache(cachedMetadata: CachedMetadata) {
+    if (cachedMetadata.links) {
+        cachedMetadata.links = cachedMetadata.links.filter((value) => !(value as TabsLinkCache).isFromTabPanels)
+    }
+    if (cachedMetadata.embeds) {
+        cachedMetadata.embeds = cachedMetadata.embeds.filter((value) => !(value as TabsEmbedCache).isFromTabPanels)
+    }
+    if (cachedMetadata.headings) {
+        cachedMetadata.headings = cachedMetadata.headings.filter((value) => !(value as TabsHeadingCache).isFromTabPanels)
+    }
+    if (cachedMetadata.tags) {
+        cachedMetadata.tags = cachedMetadata.tags.filter((value) => !(value as TabsTagCache).isFromTabPanels)
+    }
+}
+
+function addToMetadataCache(cachedMetadata: CachedMetadata, pluginCacheData: CacheData) {
     // ===== Add result to Obsidian's cache =====
     // TODO: Some code is repetitive, find a way to simplify it. Maybe add function with templates
     // Add links
-    if (outSettingsCacheData.links && outSettingsCacheData.links.length > 0) {
-        const tabsLinkCache: TabsLinkCache[] = outSettingsCacheData.links.map((cache) => ({ ...cache, isFromTabPanels: true }));
+    if (pluginCacheData.links && pluginCacheData.links.length > 0) {
+        const tabsLinkCache: TabsLinkCache[] = pluginCacheData.links.map((cache) => ({ ...cache, isFromTabPanels: true }));
         if (!cachedMetadata.links){
             cachedMetadata.links = tabsLinkCache;
         }
@@ -415,8 +401,8 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, outSettingsCacheData
     }
 
     // Add embeds
-    if (outSettingsCacheData.embeds && outSettingsCacheData.embeds.length > 0) {
-        const tabsEmbedCache: TabsEmbedCache[] = outSettingsCacheData.embeds.map((cache) => ({ ...cache, isFromTabPanels: true }));
+    if (pluginCacheData.embeds && pluginCacheData.embeds.length > 0) {
+        const tabsEmbedCache: TabsEmbedCache[] = pluginCacheData.embeds.map((cache) => ({ ...cache, isFromTabPanels: true }));
         if (!cachedMetadata.embeds){
             cachedMetadata.embeds = tabsEmbedCache;
         }
@@ -426,8 +412,8 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, outSettingsCacheData
     }
 
     // Add headings
-    if (outSettingsCacheData.headings && outSettingsCacheData.headings.length > 0) {
-        const tabsHeadingCache: TabsHeadingCache[] = outSettingsCacheData.headings.map((cache) => ({ ...cache, isFromTabPanels: true }));
+    if (pluginCacheData.headings && pluginCacheData.headings.length > 0) {
+        const tabsHeadingCache: TabsHeadingCache[] = pluginCacheData.headings.map((cache) => ({ ...cache, isFromTabPanels: true }));
         if (!cachedMetadata.headings){
             cachedMetadata.headings = tabsHeadingCache;
         }
@@ -440,8 +426,9 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, outSettingsCacheData
         cachedMetadata.headings.sort(sortCacheByOffset)
     }
 
-    if (outSettingsCacheData.tags && outSettingsCacheData.tags.length > 0) {
-        const tabsTagsCache: TabsTagCache[] = outSettingsCacheData.tags.map((cache) => ({ ...cache, isFromTabPanels: true }));
+    // Add tags
+    if (pluginCacheData.tags && pluginCacheData.tags.length > 0) {
+        const tabsTagsCache: TabsTagCache[] = pluginCacheData.tags.map((cache) => ({ ...cache, isFromTabPanels: true }));
         if (!cachedMetadata.tags){
             cachedMetadata.tags = tabsTagsCache;
         }
@@ -449,7 +436,6 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, outSettingsCacheData
             cachedMetadata.tags?.push(...tabsTagsCache);
         }
     }
-
 }
 
 //#endregion
@@ -497,7 +483,7 @@ function sortCacheByOffset(a: CacheItem, b: CacheItem): number {
         return 1;
     // Shouldn't happen
     else {
-        console.warn("Heading with same offset", "\nCache A:", a, "Cache B:", b);
+        console.warn("Tab Panels: Cache item with same offset", "\nCache A:", a, "Cache B:", b);
         return 0;
     } 
 }

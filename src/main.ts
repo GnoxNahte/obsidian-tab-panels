@@ -13,11 +13,11 @@ export default class TabPanelsPlugin extends Plugin {
 	// Event handlers
 	// Do this to unsubscribe the event when unloading plugin
 	onMetadataCacheChangedHandler = this.onMetadataCacheChanged.bind(this);
+	loadCacheFromDbHandler = this.loadCacheFromDb.bind(this);
 	debug_outputMetadataCacheHandler = this.debug_outputMetadataCache.bind(this);
 
 	async onload() {
 		this.isCacheLoaded = false;
-		console.log("Loading tab panels plugin")
 		await this.loadSettings();
 
 		this.tabPanelBuilder = new TabPanelsBuilder(this);
@@ -36,17 +36,14 @@ export default class TabPanelsPlugin extends Plugin {
 				name: `tab-panels/cache/${id}`
 			})
 
-			this.app.workspace.onLayoutReady(async () => {
-				await updateCacheFromDb(this.app.metadataCache, this.app);
-				this.isCacheLoaded = true;
-			});
+			this.app.workspace.onLayoutReady(this.loadCacheFromDbHandler);
 			this.app.metadataCache.on("changed", this.onMetadataCacheChangedHandler);
 
 			this.app.vault.on("rename", updateCacheOnFileRename);
 			this.app.vault.on("delete", updateCacheOnFileDelete);
 			
 			// Debug caching 
-			this.app.metadataCache.on("changed", this.debug_outputMetadataCacheHandler);
+			// this.app.metadataCache.on("changed", this.debug_outputMetadataCacheHandler);
 		}
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
@@ -62,12 +59,16 @@ export default class TabPanelsPlugin extends Plugin {
 	}
 
 	onunload(): void {
-		console.log("Unloading tab panels plugin")
 		this.app.metadataCache.off("changed", this.onMetadataCacheChangedHandler);
-		this.app.metadataCache.off("changed", this.debug_outputMetadataCacheHandler);
+		// this.app.metadataCache.off("changed", this.debug_outputMetadataCacheHandler);
 		
 		this.app.vault.off("rename", updateCacheOnFileRename);
 		this.app.vault.off("delete", updateCacheOnFileDelete);
+	}
+
+	async loadCacheFromDb() {
+		await updateCacheFromDb(this.app.metadataCache, this.app);
+		this.isCacheLoaded = true;
 	}
 
 	async onMetadataCacheChanged(file: TFile, data: string, cache: CachedMetadata) {
@@ -83,9 +84,9 @@ export default class TabPanelsPlugin extends Plugin {
 					"\nResolved links", this.app.metadataCache.resolvedLinks, 
 					"\nUnresolved ", this.app.metadataCache.unresolvedLinks)
 
-		localforage.iterate((cache, path) => {
-			console.log("PATH:", path, "\nCACHE:", cache)
-		})
+		// localforage.iterate((cache, path) => {
+		// 	console.log("PATH:", path, "\nCACHE:", cache)
+		// })
 		// console.log("RAW CACHE: ", JSON.stringify(cache, null, 2))
 	}
 }

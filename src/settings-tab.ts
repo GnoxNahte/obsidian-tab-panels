@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import TabPanelsPlugin from "./main";
 import { rebuildVaultCache } from "./utility/cache";
 
@@ -99,6 +99,11 @@ export class TabPanelsTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     settings.enableCaching = value;
                     await this.plugin.saveSettings();
+                    this.display();
+                    if (settings.enableCaching) {
+                        await this.plugin.loadCacheFromDb();
+                        new Notice("Tab Panels: Loading cache...", 3000)
+                    }
                 })
             )
 

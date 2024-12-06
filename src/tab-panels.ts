@@ -140,7 +140,7 @@ export class TabPanelsBuilder {
         // === Scroll to the default (selected) tab ===
         const scrollElement = tabsContainer.parentElement;
         if (scrollElement === null) {
-            console.error("Cannot find scroll element");
+            console.error("Tab Panels: Cannot find scroll element");
             return;
         }
         
