@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import TabPanelsPlugin from "./main";
-import { DataCache, rebuildVaultCache } from "./utility/cache";
+import { rebuildVaultCache } from "./utility/cache";
 
 export interface TabPanelsSettings {
 	codeblockKeyword: string;
@@ -12,7 +12,6 @@ export interface TabPanelsSettings {
 
     // Cache
     enableCaching: boolean;
-    dataCache: DataCache;
 }
 
 export const DEFAULT_SETTINGS: TabPanelsSettings = {
@@ -24,7 +23,6 @@ export const DEFAULT_SETTINGS: TabPanelsSettings = {
 
     // Cache
     enableCaching: false,
-    dataCache: {},
 }
 
 export class TabPanelsTab extends PluginSettingTab {
@@ -121,7 +119,7 @@ export class TabPanelsTab extends PluginSettingTab {
                 .setButtonText("Rebuild")
                 .setClass("mod-warning")
                 .onClick(async (evt) => {
-                    await rebuildVaultCache(settings.dataCache, this.plugin);
+                    await rebuildVaultCache(this.plugin);
                 })
             )
             

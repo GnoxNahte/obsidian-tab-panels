@@ -6,10 +6,9 @@
  * - src/util/parsing.ts
  */
 
+import * as localforage from "localforage";
 import { App, CachedMetadata, CacheItem, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, ReferenceCache, TAbstractFile, TagCache, TFile } from "obsidian";
 import TabPanelsPlugin from "src/main";
-
-export type DataCache = Record<string, CacheData>;
 
 interface TabsCache {
     // Helps identify which cache is from this plugin, 
@@ -47,17 +46,29 @@ export interface CacheData {
 
 // Update the cache from the data in settings
 // Called onload
-export async function updateCacheFromSettings(settingsData: DataCache, metadataCache: MetadataCache, app: App) {
-    for (const path in settingsData) {
+export async function updateCacheFromDb(metadataCache: MetadataCache, app: App) {
+    await localforage.iterate(async (cache: CacheData, path: string) => {
         const cachedMetadata = metadataCache.getCache(path);
         if (!cachedMetadata) {
-            console.error("metadataCache.getCache(", path, ") = ", cachedMetadata)    
-            continue;
+            if (app.vault.getFileByPath(path)) {
+                console.error("Cannot get cacheMetadata from file. Path: ", path);
+            }
+            else {
+                console.warn("Cannot find file. Path: ", path, "\nRemoving cache from db");
+
+                try {
+                    await localforage.removeItem(path);
+                } catch (error) {
+                    console.error("Error deleting cache from db. File path: ", path, "\nERROR: ", error);
+                }
+            }
+
+            return;
         }
         
         // ===== Add the cached data in settings to Obsidian's cache =====
         // Add links
-        const linkCache = settingsData[path].links;
+        const linkCache = cache.links;
         if (linkCache) {
             if (cachedMetadata.links)
                 cachedMetadata.links.push(...linkCache);
@@ -66,7 +77,7 @@ export async function updateCacheFromSettings(settingsData: DataCache, metadataC
         }
 
         // Add embeds
-        const embedCache = settingsData[path].embeds;
+        const embedCache = cache.embeds;
         if (embedCache) {
             if (cachedMetadata.embeds)
                 cachedMetadata.embeds.push(...embedCache);
@@ -78,7 +89,7 @@ export async function updateCacheFromSettings(settingsData: DataCache, metadataC
             rebuildResolvedLinks(cachedMetadata, metadataCache, path);
 
         // Add headings
-        const headingsCache = settingsData[path].headings;
+        const headingsCache = cache.headings;
         if (headingsCache) {
             if (cachedMetadata.headings) {
                 cachedMetadata.headings.push(...headingsCache);
@@ -90,8 +101,6 @@ export async function updateCacheFromSettings(settingsData: DataCache, metadataC
                 cachedMetadata.headings = headingsCache;
         }
 
-        // TODO: Add headings, embeds, etc to Obsidian's cache
-        
         // Trigger Obsidian events to reload the UI and update any other plugin that uses the metadataCache
         const file = app.vault.getFileByPath(path);
         if (file) { 
@@ -102,53 +111,63 @@ export async function updateCacheFromSettings(settingsData: DataCache, metadataC
         else {
             console.error("Cannot find file.\n Path: ", path);
         }
+    })
+}
+
+export async function updateCacheOnFileRename(file: TAbstractFile, oldPath: string) {
+    let dbData: CacheData | null;
+
+    try {
+        dbData = await localforage.getItem(oldPath);
+
+        // Change the key by copying it over then deleting the old key
+        if (dbData)
+        {
+            await localforage.setItem(file.path, dbData);
+            await localforage.removeItem(oldPath);
+        }
+    } catch (error) {
+        console.error("Error updating from db. File path: ", file.path, "\nERROR: ", error);
+        return;
     }
 }
 
-export async function updateCacheOnFileRename(plugin: TabPanelsPlugin, file: TAbstractFile, oldPath: string) {
-    const settingsData = plugin.settings.dataCache;
-
-    // Change the key by copying it over then deleting the old key
-    if (settingsData[oldPath])
-    {
-        settingsData[file.path] = settingsData[oldPath];
-        delete settingsData[oldPath];
-        plugin.saveSettings();
-    }
-}
-
-export async function updateCacheOnFileDelete(plugin: TabPanelsPlugin, file: TAbstractFile) {
-    const settingsData = plugin.settings.dataCache;
-    
-    // Delete the entry if it exists
-    if (settingsData[file.path])
-    {
-        delete settingsData[file.path];
-        plugin.saveSettings(); 
+export async function updateCacheOnFileDelete(file: TAbstractFile) {
+    try {
+        // Delete the entry
+        await localforage.removeItem(file.path);
+    } catch (error) {
+        console.error("Error deleting cache from db. File path: ", file.path, "\nERROR: ", error);
+        return;
     }
 }
 
 // Go through the whole vault and rebuild the whole cache in the settings.
 // TODO
-export async function rebuildVaultCache(settingsData: DataCache, plugin: TabPanelsPlugin) {
-    plugin.settings.dataCache = {};
-    const files = plugin.app.vault.getMarkdownFiles();
-    for (const file of files) {
-        const markdown = await plugin.app.vault.cachedRead(file);
-        const cachedMetadata = plugin.app.metadataCache.getFileCache(file);
-        if (!cachedMetadata) {
-            console.error("Error gettings cache for file: " + file.path);
-            continue;
+export async function rebuildVaultCache(plugin: TabPanelsPlugin) {
+    try {
+        localforage.clear();
+
+        const files = plugin.app.vault.getMarkdownFiles();
+        for (const file of files) {
+            const markdown = await plugin.app.vault.cachedRead(file);
+            const cachedMetadata = plugin.app.metadataCache.getFileCache(file);
+            if (!cachedMetadata) {
+                console.error("Error gettings cache for file: " + file.path);
+                continue;
+            }
+            updateCacheFromFile(plugin, file, markdown, cachedMetadata);
         }
-        updateCacheFromFile(plugin, file, markdown, cachedMetadata);
+    } catch (error) {
+        console.error("Error rebuilding vault cache.\nERROR: ", error);
+        return;
     }
-    
-    await plugin.saveSettings();
 }
 
 // Parses the markdown, update the Obsidian's metadataCache and saves the result in settings
 export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, markdown: string, cachedMetadata: CachedMetadata) {
     const metadataCache = plugin.app.metadataCache;
+    const cacheData: CacheData = {};
     
     // Sometimes it'll pass in the previous cache. So to prevent adding new data to the previous data, filter out all the data from this plugin
     if (cachedMetadata.links) {
@@ -163,12 +182,7 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
     if (cachedMetadata.tags) {
         cachedMetadata.tags = cachedMetadata.tags.filter((value) => !(value as TabsTagCache).isFromTabPanels)
     }
-    // console.log("Raw headings", JSON.stringify(cachedMetadata, null, 2))
-    const settingsCacheData = plugin.settings.dataCache;
     
-    // Reset 
-    settingsCacheData[file.path] = {};
-
     // Regex to get the markdown content
     // Note that there can be 3 or more backticks and the start and end backticks need to match
     // Regex101: https://regex101.com/r/OZVkPd/1
@@ -216,22 +230,29 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
 
         // Get second capture group and update the cache
         const codeblockMarkdown = match[2];
-        const hasItemsInCache = rebuildCacheMetadata(codeblockMarkdown, locOffset, settingsCacheData[file.path]);
-        if (hasItemsInCache) {
+        const currHasItemsInCache = rebuildCacheMetadata(codeblockMarkdown, locOffset, cacheData);
+        if (currHasItemsInCache) {
             rebuildResolvedLinks(cachedMetadata, metadataCache, file.path)
             hasItemsToCache = true;
         }
     }
 
     if (hasItemsToCache)
-        addToMetadataCache(cachedMetadata, settingsCacheData[file.path]);
+        addToMetadataCache(cachedMetadata, cacheData);
 
-    // If there's no items in the file, delete it from the cache
-    if (!hasItemsToCache && settingsCacheData[file.path]) {
-        delete settingsCacheData[file.path];
-    } 
- 
-    await plugin.saveSettings();
+    // Update db
+    try {
+        if (hasItemsToCache) {
+            await localforage.setItem(file.path, cacheData);
+        } 
+        // If there's no items in the file, delete it from the cache
+        else {
+            await localforage.removeItem(file.path);
+        }
+    } catch (error) {
+        console.error("Error updating cache in db. File path: ", file.path, "\nERROR: ", error);
+        return;
+    }
 }
 
 //#region Rebuilding CacheMetadata (From metadataCache.getFileCache)
@@ -476,7 +497,7 @@ function sortCacheByOffset(a: CacheItem, b: CacheItem): number {
         return 1;
     // Shouldn't happen
     else {
-        console.warn("Heading with same offset");
+        console.warn("Heading with same offset", "\nCache A:", a, "Cache B:", b);
         return 0;
     } 
 }

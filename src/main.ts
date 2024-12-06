@@ -1,7 +1,8 @@
-import { CachedMetadata, Plugin, TAbstractFile, TFile } from 'obsidian';
+import { CachedMetadata, Plugin, TFile } from 'obsidian';
 import { DEFAULT_SETTINGS, TabPanelsSettings, TabPanelsTab } from './settings-tab';
 import { TabPanelsBuilder } from './tab-panels';
-import { updateCacheFromSettings, updateCacheFromFile, updateCacheOnFileRename, updateCacheOnFileDelete } from './utility/cache';
+import { updateCacheFromDb, updateCacheFromFile, updateCacheOnFileRename, updateCacheOnFileDelete } from './utility/cache';
+import * as localforage from 'localforage';
 
 export default class TabPanelsPlugin extends Plugin {
 	settings: TabPanelsSettings;
@@ -12,8 +13,6 @@ export default class TabPanelsPlugin extends Plugin {
 	// Event handlers
 	// Do this to unsubscribe the event when unloading plugin
 	onMetadataCacheChangedHandler = this.onMetadataCacheChanged.bind(this);
-	onFileRenamedHandler = this.onFileRenamed.bind(this);
-	onFileDeleteHandler = this.onFileDelete.bind(this);
 	debug_outputMetadataCacheHandler = this.debug_outputMetadataCache.bind(this);
 
 	async onload() {
@@ -29,14 +28,22 @@ export default class TabPanelsPlugin extends Plugin {
 
 		// Caching
 		if (this.settings.enableCaching) {
+			// AppId is a unique id for each vault. Undocumented but plugins like Dataview and OmniSearch use it as an identifier for the database, separating each vault.
+			// NOTE: It's only available on Desktop (Not sure)
+			const id = (this.app as any).appId || "shared";
+			// Setup db
+			localforage.config({
+				name: `tab-panels/cache/${id}`
+			})
+
 			this.app.workspace.onLayoutReady(async () => {
-				await updateCacheFromSettings(this.settings.dataCache, this.app.metadataCache, this.app);
+				await updateCacheFromDb(this.app.metadataCache, this.app);
 				this.isCacheLoaded = true;
 			});
 			this.app.metadataCache.on("changed", this.onMetadataCacheChangedHandler);
 
-			this.app.vault.on("rename", this.onFileRenamedHandler);
-			this.app.vault.on("delete", this.onFileDeleteHandler);
+			this.app.vault.on("rename", updateCacheOnFileRename);
+			this.app.vault.on("delete", updateCacheOnFileDelete);
 			
 			// Debug caching 
 			this.app.metadataCache.on("changed", this.debug_outputMetadataCacheHandler);
@@ -59,8 +66,8 @@ export default class TabPanelsPlugin extends Plugin {
 		this.app.metadataCache.off("changed", this.onMetadataCacheChangedHandler);
 		this.app.metadataCache.off("changed", this.debug_outputMetadataCacheHandler);
 		
-		this.app.vault.off("rename", this.onFileRenamedHandler);
-		this.app.vault.off("delete", this.onFileDeleteHandler);
+		this.app.vault.off("rename", updateCacheOnFileRename);
+		this.app.vault.off("delete", updateCacheOnFileDelete);
 	}
 
 	async onMetadataCacheChanged(file: TFile, data: string, cache: CachedMetadata) {
@@ -70,19 +77,15 @@ export default class TabPanelsPlugin extends Plugin {
 		await updateCacheFromFile(this, file, data, cache);
 	}
 
-	async onFileRenamed(file: TAbstractFile, oldPath: string) {
-		updateCacheOnFileRename(this, file, oldPath);
-	}
-
-	async onFileDelete(file: TAbstractFile) {
-		updateCacheOnFileDelete(this, file)
-	}
-
 	debug_outputMetadataCache(file: TFile, data: string, cache: CachedMetadata) {
 		console.log("File: ", file.path,
 					"Cache:\n", this.app.metadataCache.getCache(file.path), 
 					"\nResolved links", this.app.metadataCache.resolvedLinks, 
 					"\nUnresolved ", this.app.metadataCache.unresolvedLinks)
+
+		localforage.iterate((cache, path) => {
+			console.log("PATH:", path, "\nCACHE:", cache)
+		})
 		// console.log("RAW CACHE: ", JSON.stringify(cache, null, 2))
 	}
 }
