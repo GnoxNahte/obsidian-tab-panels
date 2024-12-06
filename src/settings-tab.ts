@@ -81,15 +81,19 @@ export class TabPanelsTab extends PluginSettingTab {
             .setName("Experimental");
         
         const enableCachingDescription = new DocumentFragment();
-        enableCachingDescription.appendText("Add additional information to Obsidian's cache. This allows backlinks and outgoing links. ")
-        enableCachingDescription.appendChild(createEl("a", { text: "Learn more", href: "https://github.com/GnoxNahte/obsidian-tab-panels?tab=readme-ov-file#-caching"}))
+        enableCachingDescription.appendText("Add additional information to Obsidian's cache.\n")
+        enableCachingDescription.appendChild(createEl("a", { text: " Learn more", href: "https://github.com/GnoxNahte/obsidian-tab-panels/tree/main#cache-experimental"}))
+        enableCachingDescription.appendChild(createEl("br"))
+        enableCachingDescription.appendText("This allows backlinks, outgoing links, headings, tags showing on the sidebar. Also supports renaming files, tags.")
+        enableCachingDescription.appendChild(createEl("br"))
+        enableCachingDescription.appendText("It should also allow other plugins that uses the cache like Dataview")
+        
         const enableCachingWarning = createEl("div", {text: "Since this is this is still experimental. ", cls: "mod-warning", parent: enableCachingDescription});
         const enableCachingWarningList = createEl("ul", {parent: enableCachingWarning});
-        enableCachingWarningList.appendChild(createEl("li", { text: "It'll slightly increase load times"}))
-        enableCachingWarningList.appendChild(createEl("li", { text: "Caching might get out of sync."}));
-        enableCachingDescription.appendChild(createDiv({text: "To completely remove caching from this plugin, do the steps 1-3 in the rebuild instructions"}))
-        // enableCachingDescription.appendChild(enableCachingWarning);
-        // enableCachingDescription.appendChild(createEl("div", {text: "Since it's just released, there might be some bugs too.", cls: "mod-warning"}));
+        const enableCachingReport = enableCachingWarningList.appendChild(createEl("li", { text: "Some things might not work as expected. Report issues "}))
+        enableCachingReport.appendChild(createEl("a", {text: "here", href: "https://github.com/GnoxNahte/obsidian-tab-panels/issues/new/choose"}))
+        enableCachingWarningList.appendChild(createEl("li", { text: "However, even if things go wrong, it shouldn't affect your files."}));
+        enableCachingWarningList.appendChild(createEl("li", { text: "You can always revert it by disabling caching then reloading Obsidian"}));
 
         new Setting(containerEl)
             .setName("Enable caching")
@@ -107,27 +111,24 @@ export class TabPanelsTab extends PluginSettingTab {
                 })
             )
 
-        const rebuildCacheWarning = new DocumentFragment();
-        rebuildCacheWarning.appendChild(createEl("div", {text: "This is rebuilds the cache if you encounter syncing issues. ", cls: "mod-warning"}));
-        const rebuildCachingWarning = createEl("div", {text: "To do a full reset:", cls: "mod-warning", parent: rebuildCacheWarning});
-        const rebuildCachingWarningList = createEl("ol", {parent: rebuildCachingWarning});
-        rebuildCachingWarningList.appendChild(createEl("li", { text: "Disable caching"}))
-        rebuildCachingWarningList.appendChild(createEl("li", { text: "Go to Obsidian's \"File and links\" section in the settings"}));
-        rebuildCachingWarningList.appendChild(createEl("li", { text: "Click on rebuild"}));
-        rebuildCachingWarningList.appendChild(createEl("li", { text: "Enable caching"}));
-        rebuildCachingWarningList.appendChild(createEl("li", { text: "Click on the Rebuild button ->"}));
-    
-        new Setting(containerEl)
-            .setName("Rebuild cache")
-            .setDesc(rebuildCacheWarning)
-            .addButton(button => button
-                .setButtonText("Rebuild")
-                .setClass("mod-warning")
-                .onClick(async (evt) => {
-                    await rebuildVaultCache(this.plugin);
-                })
-            )
-            
+        if (settings.enableCaching) {
+            const rebuildCacheWarning = new DocumentFragment();
+            rebuildCacheWarning.appendText("This is rebuilds the cache if you encounter syncing issues. ");
+            rebuildCacheWarning.appendChild(createEl("div", {text: "It might take sometime depending on the size of your vault", cls: "mod-warning"}));
+        
+            new Setting(containerEl)
+                .setName("Rebuild cache")
+                .setDesc(rebuildCacheWarning)
+                .addButton(button => button
+                    .setButtonText("Rebuild")
+                    .setClass("mod-warning")
+                    .onClick(async (evt) => {
+                        new Notice("Tab Panels: Rebuilding cache...", 3000)
+                        await rebuildVaultCache(this.plugin);
+                    })
+                )
+        }
+        
         const additionalInfo = new DocumentFragment();
         additionalInfo.appendText("Reload the app to apply changes");
         additionalInfo.appendChild(createEl("br"))
