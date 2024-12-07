@@ -9,6 +9,13 @@ What caching does:
 	- Fully integrates **links, headings, and tags** within tab panels into Obsidian's core features (such as backlinks, outgoing links and graph view) and other plugins that use it like [Dataview](https://github.com/blacksmithgu/obsidian-dataview)
 	- Supports renaming linked files inside tab panels
 
+> [!TIP]
+> **Enabling caching for the first time**
+> 
+> To update the cache on the file, do one of these
+> - Edit the file. It can be anything, adding a space, deleting a character, etc. Note that this only updates the cache for the edited file only.
+> - Running "Rebuild cache" from the settings. This goes through your whole vault, finds all the data inside the tab panel code blocks and adds it to Obsidian's cache.
+
 > [!WARNING]
 > Since it's quite a large feature, I've released it as an _experimental_ feature.
 > If you find any bugs, please create an [issue](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml).

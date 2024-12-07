@@ -48,11 +48,20 @@ What this enables (similar to Obsidian's standard behaviour, but **now works in 
 - [Tags](https://help.obsidian.md/Editing+and+formatting/Tags) within tab panels are searchable and visible in the [Tags view](https://help.obsidian.md/Plugins/Tags+view).
 - Plugins like [Dataview](https://github.com/blacksmithgu/obsidian-dataview) can query and use data within tab panels.
 
+> [!TIP]
+> **Enabling caching for the first time**
+> 
+> To update the cache on the file, do one of these
+> - Edit the file. It can be anything, adding a space, deleting a character, etc.
+> - Running "Rebuild cache" from the settings. This goes through your whole vault and finds all the data inside the tab panel code blocks and adds it to Obsidian's cache.
+
 > [!WARNING]
-> Experimental Feature
 > This feature is marked as experimental due to its complexity and recent release. While testing has shown it works as intended, there may still be edge cases or unexpected issues.
 > - If you encounter any problems, please [report them](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml).
 > - This feature does not modify your files, so even if something goes wrong, your data is safe.
+> - To remove all cache from this plugin:
+> 	1. Disable caching
+>   2. Reload Obsidian
 
 <!-- TODO: ## Styles -->
 
