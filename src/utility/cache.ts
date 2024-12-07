@@ -187,8 +187,8 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
     let hasItemsToCache = false;
 
     for (const match of matches) {
-        if (!match.index) {
-            console.error("Tab panels: Error when parsing markdown, splitting markdown blocks. Unknown match index value: ", match.index, "\nMatch:", match);
+        if (match.index === undefined) {
+            console.error("Tab panels: Error when parsing markdown, splitting markdown blocks. Match index === undefined\nMatch:", match);
             return;
         }
         const textBefore = markdown.slice(lastIndex, match.index);

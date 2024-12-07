@@ -1,4 +1,4 @@
-## [1.1.0](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.0) (2024-12-07)
+## [1.1.1](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.1) (2024-12-07)
 
 **New Features & Improvements:**
 - Introduced a new setting allowing you to define your syntax for marking a tab.<br>
