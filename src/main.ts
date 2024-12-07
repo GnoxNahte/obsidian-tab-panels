@@ -51,7 +51,16 @@ export default class TabPanelsPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const rawSetting = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		this.settings = rawSetting;
+		
+		// ===== Handle upgrading settings =====
+		// Switch hideNoTabWarning to showNoTabWarning to make it clearer. Changed in 1.1.0
+		if (rawSetting.hideNoTabWarning) {
+			this.settings.showNoTabWarning = !rawSetting.hideNoTabWarning
+		}
+
+		await this.saveSettings();
 	}
 
 	async saveSettings() {

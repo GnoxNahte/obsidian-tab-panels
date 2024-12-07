@@ -41,7 +41,7 @@ export class TabPanelsBuilder {
             const content = createDiv({ parent: contentContainer, cls: "selected" })
             MarkdownRenderer.render(this.plugin.app, markdown, content, ctx.sourcePath, this.plugin);
             
-            if (!this.plugin.settings.hideNoTabWarning) {
+            if (this.plugin.settings.showNoTabWarning) {
                 const warning = "> [!WARNING] No tabs created\n> To create tabs, use `--- Tab Name`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
                 MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
             }

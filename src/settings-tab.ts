@@ -4,8 +4,8 @@ import { rebuildVaultCache } from "./utility/cache";
 
 export interface TabPanelsSettings {
 	codeblockKeyword: string;
-    hideNoTabWarning: boolean;
     tabMarkerSyntax: string;
+    showNoTabWarning: boolean;
 
     // Styling
     highlightSelectedTabName: boolean;
@@ -16,9 +16,9 @@ export interface TabPanelsSettings {
 }
 
 export const DEFAULT_SETTINGS: TabPanelsSettings = {
-	codeblockKeyword: 'tab-panels',
-    hideNoTabWarning: false,
+	codeblockKeyword: 'tabs',
     tabMarkerSyntax: '---',
+    showNoTabWarning: true,
 
     // Styling
     highlightSelectedTabName: true,
@@ -47,7 +47,7 @@ export class TabPanelsTab extends PluginSettingTab {
             .setName("Codeblock keyword")
             .addText(text => text
                 .setValue(settings.codeblockKeyword)
-                .setPlaceholder("tab-panels")
+                .setPlaceholder("tabs")
                 .onChange(async (value) => {
                     settings.codeblockKeyword = value.trim();
                     await this.plugin.saveSettings();
@@ -89,11 +89,11 @@ export class TabPanelsTab extends PluginSettingTab {
             )
 
         new Setting(containerEl)
-            .setName("Hide no tab warning")
+            .setName("Show no tab warning")
             .addToggle(toggle => toggle
-                .setValue(settings.hideNoTabWarning)
+                .setValue(settings.showNoTabWarning)
                 .onChange(async (value) => {
-                    settings.hideNoTabWarning = value;
+                    settings.showNoTabWarning = value;
                     await this.plugin.saveSettings();
                 })
             )

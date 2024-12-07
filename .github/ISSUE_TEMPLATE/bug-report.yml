@@ -11,7 +11,7 @@ body:
     attributes:
       label: What happened?
       description: Also tell us, what did you expect to happen? If it's hard to describe, take a screenshot and paste it here!
-      placeholder: Tell us what you see!
+      placeholder: Tell us what you see! If another plugin might have affected it, mention it too.
     validations:
       required: true
   - type: textarea
@@ -36,18 +36,18 @@ body:
     id: obsidian-version
     attributes:
       label: Obsidian Version
-      description: What Obsidian version are you using?
-      placeholder: 1.6.7
-    validations:
-      required: true
+      description: |  
+        What Obsidian version are you using? 
+        If left blank, I'll assume it's the latest version
+      placeholder: 1.7.4
   - type: input 
     id: plugin-version 
     attributes:
       label: Plugin Version
-      description: What plugin version are you using?
+      description:  |  
+        What version are you using?
+        If left blank, I'll assume it's the latest version
       placeholder: 1.0.0
-    validations:
-      required: true
   - type: dropdown
     id: os
     attributes:

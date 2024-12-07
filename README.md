@@ -8,51 +8,91 @@
 # obsidian-tab-panels
 [Obsidian](https://obsidian.md/) plugin to easily create tab panels to organize content into sections.
 
-## 🚀 Getting Started
-### 🖼️ Preview
-![GIF showing how the plugin looks](readme-assets/tab-panels-preview.gif)
+Install link: https://obsidian.md/plugins?id=tab-panels
+
+## Getting Started
+### Preview
+
+https://github.com/user-attachments/assets/0eff7ace-bea9-4c7d-9a24-18d1b08f3e9c
 
 Left - How it looks when it's rendered out (Live Preview/Reading mode) <br>
 Right - The markdown used to render it (Source mode)
 
-[Markdown used for the GIF](/readme-assets/preview-markdown.md). <br>
+[Markdown used in the video](/readme-assets/preview-markdown.md?plain=1). <br>
 Try copying it to view how it looks like in your vault!
 
-### 📝 Syntax 
-```tab-panels
+### Syntax 
+````
+```tabs
 --- Tab 1
 Content for tab 1
+
 --- Tab 2
 Content for tab 2
 ```
+````
 
 > [!Tip]
 > Add `(default)` to the tab name to open it automatically <br>
 > Example: `--- Default tab (default)`
 > 
 
-<!-- TODO: ### :sparkles: Features -->
+## Additional Features
+### Cache (Experimental)
+The cache feature enables Obsidian to process data inside the tab panels, just like it does for regular markdown content. This means that **links, headings, and tags** within tab panels are now fully integrated with Obsidian's core functionality.
 
-<!-- TODO: ### :art: Styles -->
+What this enables (similar to Obsidian's standard behaviour, but **now works in tab panels**):
+- [Backlinks](https://help.obsidian.md/Plugins/Backlinks) and [Outgoing links](https://help.obsidian.md/Plugins/Outgoing+links) works.
+- [Renaming linked files](https://help.obsidian.md/Files+and+folders/Manage+notes#Rename+a+note) updates markdown links in tab panels automatically.
+- Headings in tab panels appear in the [Outline](https://help.obsidian.md/Plugins/Outline) (Table of Contents).
+- [Tags](https://help.obsidian.md/Editing+and+formatting/Tags) within tab panels are searchable and visible in the [Tags view](https://help.obsidian.md/Plugins/Tags+view).
+- Plugins like [Dataview](https://github.com/blacksmithgu/obsidian-dataview) can query and use data within tab panels.
 
-## ⚠️: Known Issues & Limitations
+> [!WARNING]
+> Experimental Feature
+> This feature is marked as experimental due to its complexity and recent release. While testing has shown it works as intended, there may still be edge cases or unexpected issues.
+> - If you encounter any problems, please report them [here](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml).
+> - This feature does not modify your files, so even if something goes wrong, your data is safe.
 
-### ❗Adding code blocks inside the tab contents
-Use `~~~` instead when defining code blocks. Or if you want to continue to use \```, use `~~~tab-panels` to create the code block instead
+<!-- TODO: ## Styles -->
 
-This prevents conflicts with the 2 syntaxes: ~~~ and ```
+## Known Issues & Limitations
 
-### ❗Code block not rendering
-This is an Obsidian bug where if the code block is very long, Obsidian does not trigger the code that makes the plugin render the content. This happens to other plugins too.
+### Adding code blocks inside the tab contents
+If you use ` ``` tabs` to define the code blocks, Obsidian will assume you would want to close the tab panels when you use ` ``` ` again when you want to open a markdown code block. 
 
-**Workaround**: Scroll all the way down to the end of the code block
+To solve this, do one of these:
+- Use a different number of backticks for each code block.
+`````
+```` tabs
+--- Tab 1
+``` python
+print("Hello world!")
+```
+````
+`````
+- Switch between `~~~` and ` ``` ` for declaring the tab panels block and for the markdown code block inside the tab contents.
 
-## 🛤️ Roadmap
+`````
+~~~ tabs
+--- Tab 1
+``` python
+print("Goodbye world!")
+```
+~~~
+`````
+
+### Editing tab content
+The plugin will only display a read-only version of the notes. Any interactivity will be lost. For example, checking a checkbox will not work.
+
+## Roadmap
+- [ ] Add more settings to control styling
+
 Please [suggest any features](../../issues/new/choose) you want!
 
-## 💬 Feedback
+## Feedback
 Have some feedback? Create a GitHub issue: [Bug report](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml) or [Feature request](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=feature-request.md)
 Questions (e.g. unsure how to use the plugin): [GitHub discussions](https://github.com/GnoxNahte/obsidian-tab-panels/discussions)
 
-## 🌟 Credits
-- [Syntax](#-syntax) was inspired by [Obsidian HTML Tabs](https://github.com/ptournet/obsidian-html-tabs), made by [ptournet](https://github.com/ptournet)
+## Credits
+- [Syntax](#syntax) was inspired by [Obsidian HTML Tabs](https://github.com/ptournet/obsidian-html-tabs), made by [ptournet](https://github.com/ptournet)

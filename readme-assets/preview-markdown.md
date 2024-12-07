@@ -1,4 +1,4 @@
-```tab-panels
+```tabs
 --- Intro to Tab Panels
 ## Introduction
 Thanks for using **Tab Panels**!
@@ -16,7 +16,7 @@ This plugin allows you to create tab panels to organize your content. It uses Ob
 > Example: `--- Default tab (default)`
 ```
 
-```tab-panels
+```tabs
 --- Markdown support
 ## Obsidian markdown
 
@@ -31,7 +31,7 @@ Links: [[Internal Links]], [External links](https://obsidian.md)
 ~~~cpp
 std::cout << "===== NOTE: =====\n"
 << "Use ~~~ instead when defining code blocks\n"
-<< "Or use ~~~tab-panels to create the code block instead"
+<< "Or use ~~~tabs to create the code block instead"
 << "This prevent conflicts with the 2 syntax: ~~~ and ```";
 ~~~
 
