@@ -51,7 +51,7 @@ What this enables (similar to Obsidian's standard behaviour, but **now works in 
 > [!WARNING]
 > Experimental Feature
 > This feature is marked as experimental due to its complexity and recent release. While testing has shown it works as intended, there may still be edge cases or unexpected issues.
-> - If you encounter any problems, please report them [here](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml).
+> - If you encounter any problems, please [report them](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml).
 > - This feature does not modify your files, so even if something goes wrong, your data is safe.
 
 <!-- TODO: ## Styles -->

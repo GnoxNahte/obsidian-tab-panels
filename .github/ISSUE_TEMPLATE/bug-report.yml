@@ -39,7 +39,7 @@ body:
       description: |  
         What Obsidian version are you using? 
         If left blank, I'll assume it's the latest version
-      placeholder: 1.7.4
+      placeholder: 1.7.7
   - type: input 
     id: plugin-version 
     attributes:
@@ -47,7 +47,7 @@ body:
       description:  |  
         What version are you using?
         If left blank, I'll assume it's the latest version
-      placeholder: 1.0.0
+      placeholder: 1.1.0
   - type: dropdown
     id: os
     attributes:

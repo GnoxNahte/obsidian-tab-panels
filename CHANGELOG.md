@@ -1,3 +1,23 @@
+## [1.1.0](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.0) (2024-12-07)
+
+**New Features & Improvements:**
+- Introduced a new setting allowing you to define your syntax for marking a tab.<br>
+_(Default syntax: ---)_
+- **(Experimental)** Added [caching](../../#cache-experimental).<br>
+What caching does:
+	- Enables Obsidian to process data inside the tabs panel, just like regular markdown.
+	- Fully integrates **links, headings, and tags** within tab panels into Obsidian's core features (such as backlinks, outgoing links and graph view) and other plugins that use it like [Dataview](https://github.com/blacksmithgu/obsidian-dataview)
+	- Supports renaming linked files inside tab panels
+
+> [!WARNING]
+> Since it's quite a large feature, I've released it as an _experimental_ feature.
+> If you find any bugs, please create an [issue](https://github.com/GnoxNahte/obsidian-tab-panels/issues/new?template=bug-report.yml).
+
+Check the [README](../../#cache-experimental) for more info.
+
+**Other changes**
+- Change "Hide no tabs warning" to "Show no tabs warning" for better clarity. (You shouldn't need to modify it. It'll take your existing setting and base it on it)
+
 ## [1.0.2](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.0.2) (2024-11-15)
 
 **Features**
@@ -18,3 +38,17 @@
 **Others**
 - Add README
 - Add issue templates
+
+<!-- Template
+DO THIS, DON'T COPY: 
+- REPLACE 1.0.x (link title and url tree link) AND DATE
+
+Template to copy:
+## [1.0.x](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.0.x) (2024-xx-xx)
+
+**New Features & Improvements:**
+- 
+
+**Bugs Fixed:**
+- 
+-->
