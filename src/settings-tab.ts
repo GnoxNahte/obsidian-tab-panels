@@ -5,6 +5,7 @@ import { rebuildVaultCache } from "./utility/cache";
 export interface TabPanelsSettings {
 	codeblockKeyword: string;
     hideNoTabWarning: boolean;
+    tabMarkerSyntax: string;
 
     // Styling
     highlightSelectedTabName: boolean;
@@ -17,6 +18,7 @@ export interface TabPanelsSettings {
 export const DEFAULT_SETTINGS: TabPanelsSettings = {
 	codeblockKeyword: 'tab-panels',
     hideNoTabWarning: false,
+    tabMarkerSyntax: '---',
 
     // Styling
     highlightSelectedTabName: true,
@@ -49,6 +51,40 @@ export class TabPanelsTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     settings.codeblockKeyword = value.trim();
                     await this.plugin.saveSettings();
+                })
+            )
+
+        const tabMarkerDesc = new DocumentFragment();
+
+        const getSampleSyntaxText = () => `${settings.tabMarkerSyntax || '---'} New Tab`;
+
+        tabMarkerDesc.detach();
+        tabMarkerDesc.appendText("Set the marker format that defines a new tab in your markdown");
+        tabMarkerDesc.appendChild(createEl("br"))
+        tabMarkerDesc.appendText("Example: ")
+        const sampleCode = createEl("code", {text: getSampleSyntaxText()});
+        tabMarkerDesc.appendChild(sampleCode);
+        const tabMarkerNoInputWarning = createDiv({text: "No syntax detected. Default to ---", cls: "mod-warning"});
+        tabMarkerDesc.appendChild(tabMarkerNoInputWarning);
+
+        // Show warning if tabMarkerSyntax is falsy (e.g. empty)
+        const updateTabMarkerWarningDisplay = () => tabMarkerNoInputWarning.style.display = settings.tabMarkerSyntax ? "none" : "block";
+        
+        updateTabMarkerWarningDisplay();
+
+        new Setting(containerEl)
+            .setName("Tab marker syntax")
+            .setDesc(tabMarkerDesc)
+            .addText(text => text
+                .setValue(settings.tabMarkerSyntax)
+                .setPlaceholder("---, ===, tabs:")
+                .onChange(async (value) => {
+                    settings.tabMarkerSyntax = value.trim();
+                    await this.plugin.saveSettings();
+                    
+                    // === Update UI ===
+                    sampleCode.textContent = getSampleSyntaxText();
+                    updateTabMarkerWarningDisplay();
                 })
             )
 

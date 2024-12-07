@@ -30,7 +30,8 @@ export class TabPanelsBuilder {
         // 5. "(.*)": Captures all characters (except line terminators like \n)
         //
         // Note got "[^\S\r\n]*" from https://stackoverflow.com/a/17752989
-        const tabMatches = Array.from(markdown.matchAll(/^[^\S\r\n]*---[^\S\r\n]*(.*)/gm));
+        const getTabsRegex = new RegExp(`^[^\\S\r\n]*${this.plugin.settings.tabMarkerSyntax}[^\\S\r\n]*(.*)`, 'gm');
+        const tabMatches = Array.from(markdown.matchAll(getTabsRegex));
         
         // If can't find any matches, 
         // Just render the content without any tabs and return
