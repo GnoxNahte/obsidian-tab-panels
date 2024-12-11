@@ -52,8 +52,8 @@ What this enables (similar to Obsidian's standard behaviour, but **now works in 
 > **Enabling caching for the first time**
 > 
 > To update the cache on the file, do one of these
-> - Edit the file. It can be anything, adding a space, deleting a character, etc.
-> - Running "Rebuild cache" from the settings. This goes through your whole vault and finds all the data inside the tab panel code blocks and adds it to Obsidian's cache.
+> - Edit the file. It can be anything, adding a space, deleting a character, etc. Note that this only updates the cache for the edited file only.
+> - Running "Rebuild cache" from the settings. This goes through your whole vault, finds all the data inside the tab panel code blocks and adds it to Obsidian's cache.
 
 > [!WARNING]
 > This feature is marked as experimental due to its complexity and recent release. While testing has shown it works as intended, there may still be edge cases or unexpected issues.

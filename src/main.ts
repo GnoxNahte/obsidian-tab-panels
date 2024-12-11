@@ -30,6 +30,7 @@ export default class TabPanelsPlugin extends Plugin {
 		if (this.settings.enableCaching) {
 			// AppId is a unique id for each vault. Undocumented but plugins like Dataview and OmniSearch use it as an identifier for the database, separating each vault.
 			// NOTE: It's only available on Desktop (Not sure)
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const id = (this.app as any).appId || "shared";
 			// Setup db
 			localforage.config({

@@ -159,7 +159,6 @@ export class TabPanelsTab extends PluginSettingTab {
                     .setButtonText("Rebuild")
                     .setClass("mod-warning")
                     .onClick(async (evt) => {
-                        new Notice("Tab Panels: Rebuilding cache...", 3000)
                         await rebuildVaultCache(this.plugin);
                     })
                 )

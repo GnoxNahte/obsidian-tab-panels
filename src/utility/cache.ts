@@ -129,6 +129,9 @@ export async function updateCacheOnFileDelete(file: TAbstractFile) {
 
 // Go through the whole vault and rebuild the whole cache in the db.
 export async function rebuildVaultCache(plugin: TabPanelsPlugin) {
+    new Notice("Tab Panels: Rebuilding cache...", 3000)
+    const timeBuildTimeString = "Tab Panels: Build time";
+    console.time(timeBuildTimeString)
     try {
         const app = plugin.app;
         localforage.clear();
@@ -138,7 +141,7 @@ export async function rebuildVaultCache(plugin: TabPanelsPlugin) {
             const markdown = await plugin.app.vault.cachedRead(file);
             const cachedMetadata = plugin.app.metadataCache.getFileCache(file);
             if (!cachedMetadata) {
-                console.error("Tab Panels: Error gettings cache for file: " + file.path);
+                console.error("Tab Panels: Error getting cache for file: " + file.path);
                 continue;
             }
             updateCacheFromFile(plugin, file, markdown, cachedMetadata);
@@ -148,8 +151,12 @@ export async function rebuildVaultCache(plugin: TabPanelsPlugin) {
         }
     } catch (error) {
         console.error("Tab Panels: Error rebuilding vault cache.\nERROR: ", error);
+        new Notice("Tab Panels: Error rebuilding vault cache. Error:" + error)
+        console.timeEnd(timeBuildTimeString)
         return;
     }
+    console.timeEnd(timeBuildTimeString)
+    new Notice("Tab Panels: Finished building cache", 3000)
 }
 
 // Parses the markdown, update the Obsidian's metadataCache and saves the result in db
