@@ -7,7 +7,7 @@
  */
 
 import * as localforage from "localforage";
-import { App, CachedMetadata, CacheItem, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, ReferenceCache, TAbstractFile, TagCache, TFile } from "obsidian";
+import { App, CachedMetadata, CacheItem, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, Notice, ReferenceCache, TAbstractFile, TagCache, TFile } from "obsidian";
 import TabPanelsPlugin from "src/main";
 
 interface TabsCache {
@@ -20,12 +20,17 @@ interface TabsLinkCache extends LinkCache, TabsCache {}
 interface TabsEmbedCache extends EmbedCache, TabsCache {}
 interface TabsHeadingCache extends HeadingCache, TabsCache {}
 interface TabsTagCache extends TagCache, TabsCache {}
+interface TabsFootnoteCache extends FootnoteCache, TabsCache {}
+
+// interface SectionFootnoteCache extends SectionCache {
+//     footnoteId: string;
+// }
 
 // To add a new item to cache:
-// 1. Create new function to parse item (Reference parseTagsByLine)
+// 1. Create new function to parse item (Reference parseTagsByLine())
 // 2. Call it in rebuildCacheMetadata()
-// 3. Add updated cache to Obsidian cache, also in rebuildCacheMetadata()
-// 4. Add cache from db to Obsidian cache (called when plugin loads) in updateCacheFromDb()
+// 3. Add updated cache to Obsidian cache, addToMetadataCache()
+// 4. Filter out cache from previous cache in filterOutPluginCache()
 
 export interface CacheData {
     // Copied from Obsidian's CachedData
@@ -36,7 +41,7 @@ export interface CacheData {
     footnotes?: FootnoteCache[];
 
     // === NOT USING ===
-    // sections?: SectionCache[];
+    // sections?: SectionFootnoteCache[];
     // listItems?: ListItemCache[];
     // frontmatter?: FrontMatterCache;
     // frontmatterPosition?: Pos;
@@ -193,6 +198,8 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
         }
         const textBefore = markdown.slice(lastIndex, match.index);
         lastIndex = match.index;
+        // Add the line numbers. TODO: Optimise this? Split creates new array
+        // Note don't need to add the line numbers inside the code block as the next iteration adds it.
         lineNumber += textBefore.split("\n").length - 1;
         
         const locOffset: Loc = {
@@ -206,14 +213,22 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
         // Get second capture group and update the cache
         const codeblockMarkdown = match[2];
         const currHasItemsInCache = rebuildCacheMetadata(codeblockMarkdown, locOffset, cacheData);
+        
         if (currHasItemsInCache) {
-            rebuildResolvedLinks(cachedMetadata, metadataCache, file.path)
             hasItemsToCache = true;
         }
     }
 
-    if (hasItemsToCache)
+    if (hasItemsToCache) {
         addToMetadataCache(cachedMetadata, cacheData);
+        rebuildResolvedLinks(cachedMetadata, metadataCache, file.path)
+    }
+
+    // Inline footnotes are slightly different
+    const hasFootnotes = rebuildInlineFootnotesCache(markdown, cachedMetadata, cacheData, matches);
+    if (hasFootnotes) {
+        hasItemsToCache = hasFootnotes;
+    }
 
     // Update db
     try {
@@ -374,6 +389,86 @@ function parseTagsByLine(markdown: string, lineNumber: number, offset: number, o
 	}
 }
 
+const inlineFootnoteRegex = /\^\[[^^`\n]+\]/g;
+export default inlineFootnoteRegex;
+
+function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: CachedMetadata, outCacheData: CacheData, tabsMatches: RegExpExecArray[]): boolean {
+    // If no tab code blocks, return as no need to add to cache
+    if (tabsMatches.length === 0) {
+        return false; 
+    }
+
+    let currCodeBlockIndex = -1;
+    let codeBlockStart = Number.MAX_SAFE_INTEGER, codeBlockEnd = Number.MAX_SAFE_INTEGER;
+
+    const updateCodeBlock = (codeBlockIndex: number) => {
+        currCodeBlockIndex = codeBlockIndex;
+
+        const codeblock =  tabsMatches[codeBlockIndex];
+        codeBlockStart = codeblock.index;
+        codeBlockEnd = codeblock.index + codeblock.length;
+    }
+    
+    const footnoteMatches = [...fileMarkdown.matchAll(inlineFootnoteRegex)];
+    if (footnoteMatches.length === 0) {
+        return false;
+    }
+
+    if (cachedMetadata.footnotes === undefined) {
+        cachedMetadata.footnotes = [];
+    }
+
+    outCacheData.footnotes = [];
+    
+    footnoteMatches.forEach((footnote, index) => {
+        const footnotePosition = footnote.index ?? 0;
+        // Loop through all of the tab code blocks to find a footnote that appears after the start of the code block.
+        while (footnote.index > codeBlockStart) {
+            // To prevent infinite loops (Shouldn't happen but just in case)
+            if (currCodeBlockIndex >= tabsMatches.length - 1) {
+                console.error("Rebuilding footnote cache, While loop went over number of tab matches.\n", "Index: ", currCodeBlockIndex, " | Matches: ", tabsMatches.length);
+                break;
+            }
+
+            updateCodeBlock(currCodeBlockIndex++);
+        }
+
+        // If footnote is inside codeblock. 
+        // Don't need to check `footnote.index > codeBlockStart` as it's already check in the while loop above^
+        if (footnote.index < codeBlockEnd) {
+			const start: Loc = {
+				line: 0, // TODO: Add correct line number
+				col: footnotePosition,
+				offset: footnotePosition + 2,
+			};
+
+            console.log("Footnote: ", footnote[0], "| Index: ", index)
+            console.log("Index: ", index)
+            const cache: FootnoteCache = {
+                id: `[inline${index}`,
+                position: {
+                    start: start,
+                    end: {
+                        line: start.line,
+                        col: start.col + footnote[0].length,
+                        offset: start.offset + footnote[0].length - 3,
+                    },
+                },
+            };
+            
+            outCacheData.footnotes?.push(cache);
+            console.log("In 2 cache:", outCacheData)
+
+            const cacheForObsidian: TabsFootnoteCache = { ...cache, isFromTabPanels: true };
+            cachedMetadata.footnotes?.push(cacheForObsidian);
+        }
+    })
+
+    console.log("In cache:", outCacheData)
+
+    return true;
+}
+
 // Sometimes it'll pass in the previous cache. So to prevent adding new data to the previous data, filter out all the data from this plugin
 function filterOutPluginCache(cachedMetadata: CachedMetadata) {
     if (cachedMetadata.links) {
@@ -387,6 +482,9 @@ function filterOutPluginCache(cachedMetadata: CachedMetadata) {
     }
     if (cachedMetadata.tags) {
         cachedMetadata.tags = cachedMetadata.tags.filter((value) => !(value as TabsTagCache).isFromTabPanels)
+    }
+    if (cachedMetadata.footnotes) {
+        cachedMetadata.footnotes = cachedMetadata.footnotes.filter((value) => !(value as TabsFootnoteCache).isFromTabPanels)
     }
 }
 
@@ -439,6 +537,24 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, pluginCacheData: Cac
         else {
             cachedMetadata.tags?.push(...tabsTagsCache);
         }
+    }
+
+    // Add footnotes
+    if (pluginCacheData.footnotes && pluginCacheData.footnotes.length > 0) {
+        const tabsFootnoteCache: TabsFootnoteCache[] = pluginCacheData.footnotes.map((cache) => ({ ...cache, isFromTabPanels: true }));
+        if (!cachedMetadata.footnotes){
+            cachedMetadata.footnotes = tabsFootnoteCache;
+        }
+        else {
+            cachedMetadata.footnotes?.push(...tabsFootnoteCache);
+        }
+
+        cachedMetadata.footnotes.sort(sortCacheByOffset);
+        let inlineCount = 0;
+        cachedMetadata.footnotes.forEach((value, index) => {
+            if (value.id.startsWith("[inline"))
+                value.id = `[inline${inlineCount++}`
+        });
     }
 }
 

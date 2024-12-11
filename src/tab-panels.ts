@@ -1,5 +1,6 @@
 import { MarkdownPostProcessorContext, MarkdownRenderer } from "obsidian";
 import TabPanelsPlugin from "./main";
+import inlineFootnoteRegex from "./utility/cache";
 
 export class TabPanelsBuilder {
     plugin: TabPanelsPlugin;
@@ -45,6 +46,8 @@ export class TabPanelsBuilder {
                 const warning = "> [!WARNING] No tabs created\n> To create tabs, use `--- Tab Name`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
                 MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
             }
+            
+            this.modifyInlineFootnotesPos(markdown, container, ctx);
             return;
         }
         
@@ -111,6 +114,8 @@ export class TabPanelsBuilder {
             MarkdownRenderer.render(this.plugin.app, resultMarkdown, content, ctx.sourcePath, this.plugin);
         }
 
+        this.modifyInlineFootnotesPos(markdown, container, ctx);
+
         this.switchTab(defaultTab, tabsContainer, contentContainer, true);
     }
 
@@ -166,4 +171,54 @@ export class TabPanelsBuilder {
 
         SetScrollPos();
     }
+
+    async modifyInlineFootnotesPos(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
+        if (!this.plugin.settings.enableCaching) {
+            return;
+        }
+
+        // Markdown from start of file to before the code block
+        const sectionInfo = ctx.getSectionInfo(container);
+
+        if (!sectionInfo) {
+            console.log("Tab Panels: Section info returning null");
+            return;
+        }
+
+        const file = this.plugin.app.vault.getFileByPath(ctx.sourcePath);
+
+        if (!file) {
+            console.error("Tab Panels: Can't find file: ", ctx.sourcePath);
+            return;
+        }
+
+        const fullMarkdown = await this.plugin.app.vault.cachedRead(file);
+        // TODO: Check for frontmatter
+        const markdownSeparateByLine = [...fullMarkdown.matchAll(/\n/g)];
+        if (sectionInfo.lineStart > markdownSeparateByLine.length) {
+            console.error("Tab Panels: Error, section info line start larger than number of lines in markdown. \nLine end:", sectionInfo.lineStart, "\nNumber of lines from markdown: ", markdownSeparateByLine.length);
+            return;
+        }
+        const markdownToCheck = fullMarkdown.substring(0, markdownSeparateByLine[sectionInfo.lineStart].index);
+
+        const footnoteCount = [...markdownToCheck.matchAll(inlineFootnoteRegex)].length;
+
+        const tabContentContainer = container.querySelector(".content-container");
+        if (!tabContentContainer) {
+            console.error("Tab Panels: Can't find container");
+            return;
+        }
+
+        const footnoteElements = tabContentContainer.querySelectorAll("a.footnote-link[data-footref]",);
+
+        const matches = [...markdown.matchAll(inlineFootnoteRegex)];
+        matches.forEach((match, index) => {
+            const footnote = footnoteElements[index] as HTMLElement;
+            footnote.dataset.footref = `[inline${index + footnoteCount}`
+        })
+    }
+
+    // reassignInlineFootnotes(allFootnotesPos: number[], footnote) {
+
+    // }
 }
