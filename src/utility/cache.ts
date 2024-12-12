@@ -7,7 +7,7 @@
  */
 
 import * as localforage from "localforage";
-import { App, CachedMetadata, CacheItem, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, Notice, ReferenceCache, TAbstractFile, TagCache, TFile } from "obsidian";
+import { App, CachedMetadata, CacheItem, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, Notice, Pos, ReferenceCache, SectionCache, TAbstractFile, TagCache, TFile } from "obsidian";
 import TabPanelsPlugin from "src/main";
 
 interface TabsCache {
@@ -21,10 +21,11 @@ interface TabsEmbedCache extends EmbedCache, TabsCache {}
 interface TabsHeadingCache extends HeadingCache, TabsCache {}
 interface TabsTagCache extends TagCache, TabsCache {}
 interface TabsFootnoteCache extends FootnoteCache, TabsCache {}
+interface TabsSectionFootnoteCache extends SectionFootnoteCache, TabsCache{}
 
-// interface SectionFootnoteCache extends SectionCache {
-//     footnoteId: string;
-// }
+interface SectionFootnoteCache extends SectionCache {
+    footnoteId: string;
+}
 
 // To add a new item to cache:
 // 1. Create new function to parse item (Reference parseTagsByLine())
@@ -39,9 +40,10 @@ export interface CacheData {
     headings?: HeadingCache[];
     tags?: TagCache[];
     footnotes?: FootnoteCache[];
+    // Used only for footnote definition
+    sections?: SectionFootnoteCache[];
 
     // === NOT USING ===
-    // sections?: SectionFootnoteCache[];
     // listItems?: ListItemCache[];
     // frontmatter?: FrontMatterCache;
     // frontmatterPosition?: Pos;
@@ -263,9 +265,12 @@ function rebuildCacheMetadata(markdown: string, locOffset: Loc, outPluginCacheDa
         const currOffset = locOffset.offset + offset;
         parseLinksAndEmbedsByLine(line, currLineNum, currOffset, outPluginCacheData);
         parseHeadingsByLine(line, currLineNum, currOffset, outPluginCacheData);
-        parseTagsByLine(line, lineNumber, currOffset, outPluginCacheData);
+        parseTagsByLine(line, currLineNum, currOffset, outPluginCacheData);
         offset += line.length + 1;
     })
+
+    // Sections can be multi line so parse the whole markdown in one go.
+    parseFootnoteSections(markdown, locOffset, outPluginCacheData);
 
     // If there's anything in outPluginCacheData
     return outPluginCacheData && Object.keys(outPluginCacheData).length > 0;
@@ -421,11 +426,13 @@ function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: Cache
         return false;
     }
 
-    if (cachedMetadata.footnotes === undefined) {
+    if (!cachedMetadata.footnotes) {
         cachedMetadata.footnotes = [];
     }
 
-    outCacheData.footnotes = [];
+    if (!outCacheData.footnotes) {
+        outCacheData.footnotes = [];
+    }
     
     footnoteMatches.forEach((footnote, index) => {
         const footnotePosition = footnote.index ?? 0;
@@ -449,8 +456,6 @@ function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: Cache
 				offset: footnotePosition + 2,
 			};
 
-            console.log("Footnote: ", footnote[0], "| Index: ", index)
-            console.log("Index: ", index)
             const cache: FootnoteCache = {
                 id: `[inline${index}`,
                 position: {
@@ -464,16 +469,85 @@ function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: Cache
             };
             
             outCacheData.footnotes?.push(cache);
-            console.log("In 2 cache:", outCacheData)
 
             const cacheForObsidian: TabsFootnoteCache = { ...cache, isFromTabPanels: true };
             cachedMetadata.footnotes?.push(cacheForObsidian);
         }
     })
 
-    console.log("In cache:", outCacheData)
-
     return true;
+}
+
+// Note 1: Sections are different from the different cache types as they can be multi lines
+// Note 2: This adds to BOTH cachedMetadata.footnotes AND cachedMetadata.sections (Not sure what Obsidian uses sections for though)
+function parseFootnoteSections(markdown: string, locOffset: Loc, outPluginCacheData: CacheData) {
+    // Tracks the end of the last match to minimize the substring length for line counting
+    let lastIndex = 0;
+    let lineNumber = locOffset.line;
+
+    // Regex101: https://regex101.com/r/teKSkJ/2
+    // Syntax: ^[footnote_name]: Footnote definition
+    const namedFootnoteRegex = /^\[\^([^^`\n]+)]:([^^`\n]+(?:\n[^^`\n]+)?)$/gm;
+	const matches: RegExpMatchArray[] = [...markdown.matchAll(namedFootnoteRegex)];
+	if (matches.length > 0) {
+        // NOTE: Obsidian doesn't add the footnote link - ^[name]
+        //       But it adds the footnote definition (syntax diff is the end colon) - ^[name]: 
+        //       It adds the footnote definition to BOTH cachedMetadata.footnotes AND cachedMetadata.sections (Not sure what Obsidian uses sections for though)
+        //       Position for both are the same.
+        const footnotes: FootnoteCache[] = [];
+        const sectionFootnotes: SectionFootnoteCache[] = [];
+		matches.forEach((match) => {
+            if (!match.index) {
+                console.error("Tab panels: Parsing sections for footnote definition. Unknown match index value: ", match.index, "\nMatch:", match);
+                return;
+            }
+
+            // Similar to getting locOffset from updateCacheFromFile
+            const textBefore = markdown.slice(lastIndex, match.index);
+            lastIndex = match.index;
+            lineNumber += textBefore.split("\n").length -1 ;
+
+			const col = match.index ? match.index : 0;
+			const start: Loc = {
+				line: lineNumber,
+				col: col,
+				offset: match.index + locOffset.offset,
+			};
+
+            const position: Pos = {
+                start: start,
+                end: {
+                    line: start.line,
+                    col: start.col + match[0].length,
+                    offset: start.offset + match[0].length,
+                }
+            };
+
+            const footnoteCache: FootnoteCache = {
+                id: match[1],
+                position: position
+            };
+            footnotes.push(footnoteCache);
+
+            // Similar to footnoteCache
+            const sectionFootnoteCache: SectionFootnoteCache = {
+                footnoteId: match[1], // Custom id, not in Obsidian
+                type: "footnoteDefinition",
+                position: position
+            };
+            sectionFootnotes.push(sectionFootnoteCache);
+		});
+        
+        if (outPluginCacheData.footnotes) 
+            outPluginCacheData.footnotes.push(...footnotes);
+        else
+            outPluginCacheData.footnotes = footnotes;
+        
+        if (outPluginCacheData.sections) 
+            outPluginCacheData.sections.push(...sectionFootnotes);
+        else
+            outPluginCacheData.sections = sectionFootnotes;
+	}
 }
 
 // Sometimes it'll pass in the previous cache. So to prevent adding new data to the previous data, filter out all the data from this plugin
@@ -492,6 +566,9 @@ function filterOutPluginCache(cachedMetadata: CachedMetadata) {
     }
     if (cachedMetadata.footnotes) {
         cachedMetadata.footnotes = cachedMetadata.footnotes.filter((value) => !(value as TabsFootnoteCache).isFromTabPanels)
+    }
+    if (cachedMetadata.sections) {
+        cachedMetadata.sections = cachedMetadata.sections.filter((value) => !(value as TabsSectionFootnoteCache).isFromTabPanels)
     }
 }
 
@@ -562,6 +639,17 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, pluginCacheData: Cac
             if (value.id.startsWith("[inline"))
                 value.id = `[inline${inlineCount++}`
         });
+    }
+
+    // Add sections
+    if (pluginCacheData.sections && pluginCacheData.sections.length > 0) {
+        const tabsSectionsCache: TabsSectionFootnoteCache[] = pluginCacheData.sections.map((cache) => ({ ...cache, isFromTabPanels: true }));
+        if (!cachedMetadata.sections){
+            cachedMetadata.sections = tabsSectionsCache;
+        }
+        else {
+            cachedMetadata.sections?.push(...tabsSectionsCache);
+        }
     }
 }
 
