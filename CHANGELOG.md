@@ -1,9 +1,14 @@
+## [1.1.2](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.2) (2025-12-11)
+
+**New Features & Improvements:**
+- #5: Added caching support for footnotes
+
 ## [1.1.1](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.1) (2024-12-07)
 
 **New Features & Improvements:**
-- Introduced a new setting allowing you to define your syntax for marking a tab.<br>
+- #6 - Introduced a new setting allowing you to define your syntax for marking a tab.<br>
 _(Default syntax: ---)_
-- **(Experimental)** Added [caching](../../#cache-experimental).<br>
+- #3 - **(Experimental)** Added [caching](../../#cache-experimental).<br>
 What caching does:
 	- Enables Obsidian to process data inside the tabs panel, just like regular markdown.
 	- Fully integrates **links, headings, and tags** within tab panels into Obsidian's core features (such as backlinks, outgoing links and graph view) and other plugins that use it like [Dataview](https://github.com/blacksmithgu/obsidian-dataview)
@@ -51,7 +56,8 @@ DO THIS, DON'T COPY:
 - REPLACE 1.0.x (link title and url tree link) AND DATE
 
 Template to copy:
-## [1.0.x](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.0.x) (2024-xx-xx)
+
+## [1.1.x](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.x) (2025-xx-xx)
 
 **New Features & Improvements:**
 - 

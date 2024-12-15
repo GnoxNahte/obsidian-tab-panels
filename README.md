@@ -94,6 +94,12 @@ print("Goodbye world!")
 ### Editing tab content
 The plugin will only display a read-only version of the notes. Any interactivity will be lost. For example, checking a checkbox will not work.
 
+### Caching - Footnotes
+To use footnotes inside tabs, ensure that both the *footnote reference* (`[^1]`) and the *footnote definition* (`[^1]: definition`) are placed within the same tabs codeblocks. If either the footnote reference or its definition is located outside the tabs codeblock, Obsidian won't register it and will just display it as text instead of a footnote.
+
+> [!NOTE]
+> This doens't apply for [inline footnotes](https://help.obsidian.md/Editing+and+formatting/Basic+formatting+syntax#:~:text=You%20can%20also%20inline,not%20in%20Live%20Preview.) (`^[Inline footnote]`) as they combine the footnote reference and definition together.
+
 ## Roadmap
 - [ ] Add more settings to control styling
 
