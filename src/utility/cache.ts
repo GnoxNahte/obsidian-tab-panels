@@ -404,7 +404,7 @@ function parseTagsByLine(markdown: string, lineNumber: number, offset: number, o
 const inlineFootnoteRegex = /\^\[[^^`\n]+\]/g;
 export default inlineFootnoteRegex;
 
-function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: CachedMetadata, outCacheData: CacheData, tabsMatches: RegExpExecArray[]): boolean {
+function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: CachedMetadata, outCacheData: CacheData, tabsMatches: RegExpMatchArray[]): boolean {
     // If no tab code blocks, return as no need to add to cache
     if (tabsMatches.length === 0) {
         return false; 
@@ -417,8 +417,14 @@ function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: Cache
         currCodeBlockIndex = codeBlockIndex;
 
         const codeblock =  tabsMatches[codeBlockIndex];
-        codeBlockStart = codeblock.index;
-        codeBlockEnd = codeblock.index + codeblock.length;
+        if (codeblock.index) {
+            codeBlockStart = codeblock.index;
+        }
+        else {
+            codeBlockStart = 0;
+            console.error("Rebuilding inline footnotes, regex match.index === ", codeblock.index);
+        }
+        codeBlockEnd = codeBlockStart + codeblock.length;
     }
     
     const footnoteMatches = [...fileMarkdown.matchAll(inlineFootnoteRegex)];
@@ -437,7 +443,7 @@ function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: Cache
     footnoteMatches.forEach((footnote, index) => {
         const footnotePosition = footnote.index ?? 0;
         // Loop through all of the tab code blocks to find a footnote that appears after the start of the code block.
-        while (footnote.index > codeBlockStart) {
+        while (footnotePosition > codeBlockStart) {
             // To prevent infinite loops (Shouldn't happen but just in case)
             if (currCodeBlockIndex >= tabsMatches.length - 1) {
                 console.error("Rebuilding footnote cache, While loop went over number of tab matches.\n", "Index: ", currCodeBlockIndex, " | Matches: ", tabsMatches.length);
@@ -449,7 +455,7 @@ function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: Cache
 
         // If footnote is inside codeblock. 
         // Don't need to check `footnote.index > codeBlockStart` as it's already check in the while loop above^
-        if (footnote.index < codeBlockEnd) {
+        if (footnotePosition < codeBlockEnd) {
 			const start: Loc = {
 				line: 0, // TODO: Add correct line number
 				col: footnotePosition,
