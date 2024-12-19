@@ -1,3 +1,15 @@
+## [1.1.3](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.3) (2024-12-19)
+
+**Bugs Fixed:**
+- #11: Correct position in note when clicking on heading in Outline (Table of Content)
+
+> [!WARNING]
+> Note, these don't work and don't think it'll be fixed:
+> - Scrolling on the page will highlight the wrong heading in Outline (Usually offsets by 1 heading)
+> - It'll still position the page wrongly when using [[Note#Heading]]
+
+Info on how this fix works any why it the stuff in the warning can't be fixed: [comment in #11](https://github.com/GnoxNahte/obsidian-tab-panels/issues/11#issuecomment-2551351202) - Check How it works heading
+
 ## [1.1.2](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.2) (2025-12-11)
 
 **New Features & Improvements:**
