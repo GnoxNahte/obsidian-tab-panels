@@ -23,7 +23,7 @@ export default class TabPanelsPlugin extends Plugin {
 		this.tabPanelBuilder = new TabPanelsBuilder(this);
 		this.registerMarkdownCodeBlockProcessor(
 			this.settings.codeblockKeyword, 
-			(src, el, ctx)=>this.tabPanelBuilder.create(src, el, ctx)
+			async (src, el, ctx)=> this.tabPanelBuilder.create(src, el, ctx)
 		);
 
 		// Caching

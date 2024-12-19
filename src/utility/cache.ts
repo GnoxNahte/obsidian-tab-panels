@@ -9,6 +9,7 @@
 import * as localforage from "localforage";
 import { App, CachedMetadata, CacheItem, EmbedCache, FootnoteCache, HeadingCache, LinkCache, Loc, MetadataCache, Notice, Pos, ReferenceCache, SectionCache, TAbstractFile, TagCache, TFile } from "obsidian";
 import TabPanelsPlugin from "src/main";
+import { headingRegex, inlineFootnoteRegex } from "./constants";
 
 interface TabsCache {
     // Helps identify which cache is from this plugin, 
@@ -332,7 +333,6 @@ function parseLinksAndEmbedsByLine(markdown: string, lineNumber: number, offset:
 // Syntax for headings: # Heading, ## Heading 2
 function parseHeadingsByLine(markdown: string, lineNumber: number, offset: number, outPluginCacheData: CacheData) {
     // Regex101 tests: https://regex101.com/r/Tydzgd/1
-    const headingRegex = /^[^\S\r\n]*(#{1,6}) +(.*)/m;
     // match[0]: Full string
     // match[1]: Hashtags to count level
     // match[2]: Heading text
@@ -400,9 +400,6 @@ function parseTagsByLine(markdown: string, lineNumber: number, offset: number, o
             outPluginCacheData.tags = tags;
 	}
 }
-
-const inlineFootnoteRegex = /\^\[[^^`\n]+\]/g;
-export default inlineFootnoteRegex;
 
 function rebuildInlineFootnotesCache(fileMarkdown: string, cachedMetadata: CachedMetadata, outCacheData: CacheData, tabsMatches: RegExpMatchArray[]): boolean {
     // If no tab code blocks, return as no need to add to cache

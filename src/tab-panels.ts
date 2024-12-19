@@ -1,6 +1,6 @@
-import { MarkdownPostProcessorContext, MarkdownRenderer } from "obsidian";
+import { MarkdownPostProcessorContext, MarkdownRenderer, MarkdownView } from "obsidian";
 import TabPanelsPlugin from "./main";
-import inlineFootnoteRegex from "./utility/cache";
+import { headingRegex, inlineFootnoteRegex } from "./utility/constants";
 
 export class TabPanelsBuilder {
     plugin: TabPanelsPlugin;
@@ -9,7 +9,7 @@ export class TabPanelsBuilder {
         this.plugin = plugin;
     }
 
-    create(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
+    async create(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
         container.classList.add("tab-panel-container");
 
         if (this.plugin.settings.highlightSelectedTabName) {
@@ -46,8 +46,8 @@ export class TabPanelsBuilder {
                 const warning = "> [!WARNING] No tabs created\n> To create tabs, use `--- Tab Name`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
                 MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
             }
-            
-            this.modifyInlineFootnotesPos(markdown, container, ctx);
+
+            await this.modifyRenderedContent(markdown, container, ctx);
             return;
         }
         
@@ -114,7 +114,7 @@ export class TabPanelsBuilder {
             MarkdownRenderer.render(this.plugin.app, resultMarkdown, content, ctx.sourcePath, this.plugin);
         }
 
-        this.modifyInlineFootnotesPos(markdown, container, ctx);
+        await this.modifyRenderedContent(markdown, container, ctx);
 
         this.switchTab(defaultTab, tabsContainer, contentContainer, true);
     }
@@ -172,36 +172,53 @@ export class TabPanelsBuilder {
         SetScrollPos();
     }
 
-    async modifyInlineFootnotesPos(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
+    async modifyRenderedContent(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
         if (!this.plugin.settings.enableCaching) {
             return;
         }
 
+        const markdownBeforeCodeblock = await this.getMarkdownBeforeCodeBlock(container, ctx);
+        if (!markdownBeforeCodeblock)
+            return;
+
+        this.modifyInlineFootnotesPos(markdown, markdownBeforeCodeblock, container);
+        this.updateOutline(markdown, markdownBeforeCodeblock, container);
+    }
+
+    // Get markdown before the code block
+    async getMarkdownBeforeCodeBlock(container: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<string | null> {
         // Markdown from start of file to before the code block
         const sectionInfo = ctx.getSectionInfo(container);
 
         if (!sectionInfo) {
             console.log("Tab Panels: Section info returning null");
-            return;
+            return null;
         }
 
         const file = this.plugin.app.vault.getFileByPath(ctx.sourcePath);
 
         if (!file) {
             console.error("Tab Panels: Can't find file: ", ctx.sourcePath);
-            return;
+            return null;
         }
 
         const fullMarkdown = await this.plugin.app.vault.cachedRead(file);
         // TODO: Check for frontmatter
         const markdownSeparateByLine = [...fullMarkdown.matchAll(/\n/g)];
         if (sectionInfo.lineStart > markdownSeparateByLine.length) {
-            console.error("Tab Panels: Error, section info line start larger than number of lines in markdown. \nLine end:", sectionInfo.lineStart, "\nNumber of lines from markdown: ", markdownSeparateByLine.length);
-            return;
+            console.error("Tab Panels: Error, section info line start larger than number of lines in markdown. \nLine end:", sectionInfo.lineStart, 
+                            "\nNumber of lines from markdown: ", markdownSeparateByLine.length);
+            return null;
         }
-        const markdownToCheck = fullMarkdown.substring(0, markdownSeparateByLine[sectionInfo.lineStart].index);
 
-        const footnoteCount = [...markdownToCheck.matchAll(inlineFootnoteRegex)].length;
+        return fullMarkdown.substring(0, markdownSeparateByLine[sectionInfo.lineStart].index);
+    }
+
+    // Obsidian assigns each inline footnote an index.
+    // The rendered markdown produced will link the inlinefootnote that starts with 0
+    // So this function modifies the inline footnote link indexes and offsets it by the number of inline footnotes before it.
+    modifyInlineFootnotesPos(markdown: string, markdownBeforeCodeblock: string, container: HTMLElement) {
+        const footnoteCount = [...markdownBeforeCodeblock.matchAll(inlineFootnoteRegex)].length;
 
         const tabContentContainer = container.querySelector(".content-container");
         if (!tabContentContainer) {
@@ -218,7 +235,63 @@ export class TabPanelsBuilder {
         })
     }
 
-    // reassignInlineFootnotes(allFootnotesPos: number[], footnote) {
+    // Obsidian doesn't link the position of the rendered markdown headings correctly, 
+    // This function listens to the "click" on the outline and correctly positions the note such that the heading is on top.
+    async updateOutline(markdown: string, markdownBeforeCodeblock: string, container: HTMLElement) {
+        // Add global flag if it doesn't have the flag
+        let headingRegexFlags = headingRegex.flags;
+        if (!headingRegexFlags.contains("g"))
+            headingRegexFlags += "g";
 
-    // }
+        const headingRegexGlobal = RegExp(headingRegex, headingRegexFlags);
+        
+        const headingCountBeforeCodeblock = [...markdownBeforeCodeblock.matchAll(headingRegexGlobal)].length;
+        const headingCountInCodeblock = [...markdown.matchAll(headingRegexGlobal)].length;
+
+        // Not sure why sometimes Outline isn't fully loaded by the time this running. 
+        // Maybe it's processing metadata cache? But it works sometimes, usually when there is only 1 tab panel (regardless of length)
+        await new Promise(r => setTimeout(r, 200));
+
+        const outline = this.plugin.app.workspace.getLeavesOfType("outline")[0];
+		
+		const outlineEl = outline.view.containerEl;
+		const allOutlineHeadings = Array.from(outlineEl.querySelectorAll("div.tree-item-self.is-clickable"));
+
+        const headingStartOffset = headingCountBeforeCodeblock;
+        const headingEndOffset = headingCountBeforeCodeblock + headingCountInCodeblock;
+        
+        const outlineHeadings = allOutlineHeadings.slice(headingStartOffset, headingEndOffset);
+		
+		const markdownView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		// If unable to get markdown, OR
+		// NOT in reading mode,
+		// return;
+		if (!markdownView || markdownView.getMode() === "source") 
+			return;
+
+        // console.log("Container:", container);
+        // console.log("MdView: ", markdownView.contentEl);
+
+		const allHeadingsInPlugin = Array.from(markdownView.contentEl.querySelectorAll(".markdown-reading-view :is(h1,h2,h3,h4,h5,h6)"))
+                                         .slice(headingStartOffset, headingEndOffset);
+        // console.log("Range: ", headingStartOffset, " - ", headingEndOffset, " (", (headingEndOffset - headingStartOffset), ")");
+        // console.log("Outline:", outlineHeadings, " | all headings:", allHeadingsInPlugin)
+
+        if (outlineHeadings.length !== allHeadingsInPlugin.length) {
+            console.error("Outline heading length and headings in tab panels rendered markdown doesn't match up");
+            return;
+        }
+		outlineHeadings.forEach((heading, index) => {
+			heading.addEventListener("click", (ev) => {
+				ev.preventDefault();
+				const headingInPlugin = allHeadingsInPlugin[index];
+				headingInPlugin.classList.add("is-flashing")
+                setTimeout(() => {
+                    headingInPlugin.classList.remove("is-flashing")
+                }, 3000);
+                
+				headingInPlugin.scrollIntoView(); 
+			})
+		})
+    }
 }
