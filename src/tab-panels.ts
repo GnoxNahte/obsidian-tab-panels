@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, MarkdownRenderer, MarkdownView } from "obsidian";
+import { MarkdownPostProcessorContext, MarkdownRenderer } from "obsidian";
 import TabPanelsPlugin from "./main";
 import { headingRegex, inlineFootnoteRegex } from "./utility/constants";
 
@@ -253,7 +253,7 @@ export class TabPanelsBuilder {
         await new Promise(r => setTimeout(r, 200));
 
         const outline = this.plugin.app.workspace.getLeavesOfType("outline")[0];
-		
+    
 		const outlineEl = outline.view.containerEl;
 		const allOutlineHeadings = Array.from(outlineEl.querySelectorAll("div.tree-item-self.is-clickable"));
 
@@ -262,23 +262,19 @@ export class TabPanelsBuilder {
         
         const outlineHeadings = allOutlineHeadings.slice(headingStartOffset, headingEndOffset);
 		
-		const markdownView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-		// If unable to get markdown, OR
-		// NOT in reading mode,
-		// return;
-		if (!markdownView || markdownView.getMode() === "source") 
+		// If NOT in Reading Mode, return
+		if (!container.closest(".markdown-reading-view")) 
 			return;
 
-        // console.log("Container:", container);
-        // console.log("MdView: ", markdownView.contentEl);
-
-		const allHeadingsInPlugin = Array.from(markdownView.contentEl.querySelectorAll(".markdown-reading-view :is(h1,h2,h3,h4,h5,h6)"))
-                                         .slice(headingStartOffset, headingEndOffset);
+		const allHeadingsInPlugin = Array.from(container.querySelectorAll(".markdown-reading-view :is(h1,h2,h3,h4,h5,h6)"));
         // console.log("Range: ", headingStartOffset, " - ", headingEndOffset, " (", (headingEndOffset - headingStartOffset), ")");
         // console.log("Outline:", outlineHeadings, " | all headings:", allHeadingsInPlugin)
 
         if (outlineHeadings.length !== allHeadingsInPlugin.length) {
-            console.error("Outline heading length and headings in tab panels rendered markdown doesn't match up");
+            console.error("Outline heading length and headings in tab panels rendered markdown doesn't match up", 
+                            "\nOutline Headings:", outlineHeadings.map((el) => el.textContent), 
+                            "\nHeadings in plugin:", allHeadingsInPlugin.map((el)=> el.textContent)
+            );
             return;
         }
 		outlineHeadings.forEach((heading, index) => {

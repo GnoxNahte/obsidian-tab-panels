@@ -56,10 +56,10 @@ export interface CacheData {
 // Called onload
 export async function updateCacheFromDb(metadataCache: MetadataCache, app: App) {
     console.log("Tab Panels: Loading cache from Database");
-    const loadCacheTimeLabel = "Tab Panels: Finished loading cache in "
+    const loadCacheTimeLabel = "Tab Panels: Finished loading cache ins"
     console.time(loadCacheTimeLabel);
     try {
-        await localforage.iterate((cache: CacheData, path: string) => {
+        await localforage.iterate((pluginCache: CacheData, path: string) => {
             const cachedMetadata = metadataCache.getCache(path);
             if (!cachedMetadata) {
                 if (app.vault.getFileByPath(path)) {
@@ -80,16 +80,15 @@ export async function updateCacheFromDb(metadataCache: MetadataCache, app: App) 
             filterOutPluginCache(cachedMetadata);
 
             // Add the cached data to Obsidian's cache
-            addToMetadataCache(cachedMetadata, cache);
+            addToMetadataCache(cachedMetadata, pluginCache);
 
             rebuildResolvedLinks(cachedMetadata, metadataCache, path);
- 
+
             // Trigger Obsidian events to reload the UI and update any other plugin that uses the metadataCache
             const file = app.vault.getFileByPath(path);
             if (file) {
-                // const markdown = await app.vault.cachedRead(file);
-                // metadataCache.trigger("changed", app.vault.getFileByPath(path), markdown);
-                metadataCache.trigger("resolve", app.vault.getFileByPath(path));
+                metadataCache.trigger("changed", file);
+                metadataCache.trigger("resolve", file);
             }
             else {
                 console.error("Tab Panels: Cannot find file.\n Path: ", path);
