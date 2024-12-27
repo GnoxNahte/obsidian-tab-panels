@@ -1,3 +1,23 @@
+<!-- Template
+DO THIS, DON'T COPY: 
+- REPLACE 1.0.x (link title and url tree link) AND DATE
+
+Template to copy:
+
+## [1.1.x](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.x) (2025-xx-xx)
+
+**New Features & Improvements:**
+- 
+
+**Bugs Fixed:**
+- 
+-->
+
+## [1.1.4](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.4) (2024-12-27)
+
+**Bugs Fixed:**
+- Fix #14 and #11 Fix cache not updating when opening a note on a new tab and on startup
+
 ## [1.1.3](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.3) (2024-12-19)
 
 **Bugs Fixed:**
@@ -8,7 +28,7 @@
 > - Scrolling on the page will highlight the wrong heading in Outline (Usually offsets by 1 heading)
 > - It'll still position the page wrongly when using [[Note#Heading]]
 
-Info on how this fix works any why it the stuff in the warning can't be fixed: [comment in #11](https://github.com/GnoxNahte/obsidian-tab-panels/issues/11#issuecomment-2551351202) - Check How it works heading
+Info on how this fix works any why it the stuff in the warning can't be fixed: [comment in #11](https://github.com/GnoxNahte/obsidian-tab-panels/issues/11#issuecomment-2551351202) - Check the "How it works"
 
 ## [1.1.2](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.2) (2025-12-11)
 
@@ -62,18 +82,3 @@ Check the [README](../../#cache-experimental) for more info.
 **Others**
 - Add README
 - Add issue templates
-
-<!-- Template
-DO THIS, DON'T COPY: 
-- REPLACE 1.0.x (link title and url tree link) AND DATE
-
-Template to copy:
-
-## [1.1.x](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.x) (2025-xx-xx)
-
-**New Features & Improvements:**
-- 
-
-**Bugs Fixed:**
-- 
--->
