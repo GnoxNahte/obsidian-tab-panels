@@ -116,3 +116,7 @@ div.content-container {
         margin-bottom: 0 !important;
     }
 }
+
+.block-language-tabs :is(p,pre,table,ul,ol) + :is(h1,h2,h3,h4,h5,h6) {
+    margin-top: var(--heading-spacing);
+}
