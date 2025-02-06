@@ -92,6 +92,13 @@ ul.tab-container {
     }
 }
 
+/* Nested tab panels fix curve - Issue: https://github.com/GnoxNahte/obsidian-tab-panels/issues/17#issuecomment-2566461416*/
+.tab-panel-container .tab-panel-container li.tab.selected:last-child {
+    &::before, &::after {
+        bottom: 0px;
+    }
+}
+
 .highlight-selected-tab-name li.selected.tab {
     color: var(--color-accent);
 }
