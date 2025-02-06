@@ -116,3 +116,7 @@ div.content-container {
         margin-bottom: 0 !important;
     }
 }
+
+.tab-container .tab:hover {
+    cursor: pointer;
+}
