@@ -367,7 +367,7 @@ function parseHeadingsByLine(markdown: string, lineNumber: number, offset: numbe
 
 // Syntax for tags: #tag
 function parseTagsByLine(markdown: string, lineNumber: number, offset: number, outPluginCacheData: CacheData)  {
-    const tagRegex = /#[^\s~!@#$%^&*()+={}|:;"'<>?`[\]\\,.]+/g;
+    const tagRegex = /(?<=^|\s)#[^\s~!@#$%^&*()+={}|:;"'<>?`[\]\\,.]+/g;
 	const matches: RegExpMatchArray[] = [...markdown.matchAll(tagRegex)];
 	if (matches.length > 0) {
         const tags: TagCache[] = [];
