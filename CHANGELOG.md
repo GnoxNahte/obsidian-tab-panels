@@ -12,6 +12,21 @@ Template to copy:
 **Bugs Fixed:**
 - 
 -->
+
+## [1.1.6](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.6) (2025-01-07)
+
+**New Features & Improvements:**
+- #18: Add support when using "Export to pdf". This just shows all the tabs spread out, something like this.
+<img src="https://github.com/user-attachments/assets/0fbaa764-111c-42d0-935f-819c9907d2d4" alt="Export tab panels to pdf preview" width="400px">
+
+> [!WARNING]
+> For any using custom CSS snippets to modify the tab panels:
+> This update adds a div as a parent inside .content-container. It might mess up some of your CSS.
+> Previously, to target that div, you would use something like `.tab-panel-container .content-container > div` but now you can use `.tab-panel-container .rendered-content`
+
+**Bugs Fixed:**
+- Fix minor nesting bug from previous release.
+
 ## [1.1.5](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.5) (2025-01-07)
 
 **New Features & Improvements:**
