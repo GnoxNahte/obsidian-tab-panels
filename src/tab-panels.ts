@@ -60,7 +60,7 @@ export class TabPanelsBuilder {
             if (!this.checkIfCodeblockClosed(codeblocksBeforeFirstTab)) {
                 const firstCodeblock = codeblocksBeforeFirstTab[0];
                 // Find next matching codeblock
-                const nextCodeblockIndex = markdown.indexOf(firstCodeblock[0], firstCodeblock.index + 1);
+                const nextCodeblockIndex = markdown.indexOf(firstCodeblock[0], firstCodeblock.index ?? 0 + 1);
                 
                 // Remove any tabs inside the codeblock from tabMatches
                 if (nextCodeblockIndex !== -1) {
@@ -125,7 +125,7 @@ export class TabPanelsBuilder {
                 // - is NOT last tab, get the start of the next tab
                 // - is last tab, get until the end of the string
                 const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : markdown.length;
-                const contentMarkdown = markdown.substring(tabMatches[i].index, contentMarkdownEnd);
+                const contentMarkdown = markdown.substring(tabMatches[i].index ?? 0, contentMarkdownEnd);
                 // Remove the first line ("--- Tab Name")
                 if (removeTab) {
                     const firstNewLinePos = contentMarkdown.indexOf("\n")
@@ -168,7 +168,7 @@ export class TabPanelsBuilder {
         this.switchTab(defaultTab, tabsContainer, contentContainer, true);
     }
 
-    checkIfCodeblockClosed(codeblocks: RegExpExecArray[]): boolean {
+    checkIfCodeblockClosed(codeblocks: RegExpMatchArray[]): boolean {
         if (codeblocks == null || codeblocks.length === 0)
             return true;
 

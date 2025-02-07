@@ -12,6 +12,16 @@ Template to copy:
 **Bugs Fixed:**
 - 
 -->
+## [1.1.5](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.5) (2025-01-07)
+
+**New Features & Improvements:**
+- #16: Change cursor type to pointer when hovering on a tab
+
+**Bugs Fixed:**
+- #17: Fix when the last tab in a nested tab panel is slightly offset.
+- #21: Fix wrongly adding tags when linking headings.
+- Fix nesting tab panels. Previously was only able to nest 1 level down. Now can nest as many as you want (Tested 10 levels)
+- Fix edge case error when there is an open codeblock before the first tab. Now it'll ignore the tab as the tab is "in" the codeblock.
 
 ## [1.1.4](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.4) (2024-12-27)
 
