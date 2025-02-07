@@ -60,7 +60,7 @@ export class TabPanelsBuilder {
             if (!this.checkIfCodeblockClosed(codeblocksBeforeFirstTab)) {
                 const firstCodeblock = codeblocksBeforeFirstTab[0];
                 // Find next matching codeblock
-                const nextCodeblockIndex = markdown.indexOf(firstCodeblock[0], firstCodeblock.index ?? 0 + 1);
+                const nextCodeblockIndex = markdown.indexOf(firstCodeblock[0], (firstCodeblock.index ?? 0) + 1);
                 
                 // Remove any tabs inside the codeblock from tabMatches
                 if (nextCodeblockIndex !== -1) {
@@ -140,10 +140,10 @@ export class TabPanelsBuilder {
             }
             
             let resultMarkdown = getMarkdown(true);
-            const codeblocks = Array.from(resultMarkdown.matchAll(codeblockRegex));
-
+            
             // If codeblocks haven't complete, might be nesting tab panels
             do {
+                const codeblocks = Array.from(resultMarkdown.matchAll(codeblockRegex));
                 if (this.checkIfCodeblockClosed(codeblocks)) {
                     break;
                 }
@@ -169,7 +169,7 @@ export class TabPanelsBuilder {
     }
 
     checkIfCodeblockClosed(codeblocks: RegExpMatchArray[]): boolean {
-        if (codeblocks == null || codeblocks.length === 0)
+        if (codeblocks === null || codeblocks.length === 0)
             return true;
 
         // Use a stack to check if the codeblock has closed.
