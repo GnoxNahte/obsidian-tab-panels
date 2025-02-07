@@ -12,6 +12,12 @@ export class TabPanelsBuilder {
     }
 
     async create(markdown: string, container: HTMLElement, ctx: MarkdownPostProcessorContext) {
+        // Regexes used multiple times
+
+        // Get all codeblocks. Regex101: https://regex101.com/r/zt1s7Z/1
+        const codeblockRegex = /^ *~{3,}|`{3,}/gm;
+        // const codeblocks = markdown.matchAll(/^ *[`|~]{3,}/gm);
+        
         container.classList.add("tab-panel-container");
 
         if (this.plugin.settings.highlightSelectedTabName) {
@@ -35,7 +41,41 @@ export class TabPanelsBuilder {
         // Note got "[^\S\r\n]*" from https://stackoverflow.com/a/17752989
         const getTabsRegex = this.tabsRegex;
         const tabMatches = Array.from(markdown.matchAll(getTabsRegex));
-        
+
+        // Handling an edge case:
+        // If there are any '--- Tab' inside a codeblock and '--- Tab' is the first tab, need to skip the first tabs
+        // Example (sample markdown, excluding initial ```tabs):
+        // ```
+        // --- Ignore this tab as it's inside a codeblock, so treat it as code
+        // The initial tabMatches matchAll regex will match ^ so need to remove it
+        // ```
+        // --- First tab (Treat this as the first tab)
+        // End example 
+        //
+        // NOTE: Checking tabMatches.length > 0 before the next if (tabMatches.length === 0). 
+        // Might seem redundant but code inside this if statement might remove some of the starting tabs
+        if (tabMatches.length > 0) {
+            const contentBeforeFirstTab = markdown.substring(0, tabMatches[0].index);
+            const codeblocksBeforeFirstTab = Array.from(contentBeforeFirstTab.matchAll(codeblockRegex));
+            if (!this.checkIfCodeblockClosed(codeblocksBeforeFirstTab)) {
+                const firstCodeblock = codeblocksBeforeFirstTab[0];
+                // Find next matching codeblock
+                const nextCodeblockIndex = markdown.indexOf(firstCodeblock[0], firstCodeblock.index + 1);
+                
+                // Remove any tabs inside the codeblock from tabMatches
+                if (nextCodeblockIndex !== -1) {
+                    const textBeforeCodeblock = markdown.slice(0, nextCodeblockIndex);
+                    const tabCount = Array.from(textBeforeCodeblock.matchAll(getTabsRegex)).length;
+                    tabMatches.splice(0, tabCount);
+                }
+                // Can't find next codeblock so everything inside the codeblock shouldn't be tabs.
+                // So delete all tabs
+                else {
+                    tabMatches.length = 0;
+                }
+            }
+        }
+
         // If can't find any matches, 
         // Just render the content without any tabs and return
         if (tabMatches.length === 0) {
@@ -45,7 +85,7 @@ export class TabPanelsBuilder {
             MarkdownRenderer.render(this.plugin.app, markdown, content, ctx.sourcePath, this.plugin);
             
             if (this.plugin.settings.showNoTabWarning) {
-                const warning = "> [!WARNING] No tabs created\n> To create tabs, use `--- Tab Name`. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning"
+                const warning = `> [!WARNING] No tabs created\n> To create tabs, use '${this.plugin.settings.tabMarkerSyntax} Tab Name'. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning`;
                 MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
             }
 
@@ -73,7 +113,8 @@ export class TabPanelsBuilder {
             }
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
 
-            const currTabIndex = tabIndex; // If pass in tabIndex directly, it'll keep returning the number of tabs 
+            // If pass in tabIndex directly, it'll keep returning the number of tabs as the click event is called after all the parsing is done.
+            const currTabIndex = tabIndex; 
             tab.addEventListener("click", () => this.switchTab(currTabIndex, tabsContainer, contentContainer))
             MarkdownRenderer.render(this.plugin.app, tabText, tab, ctx.sourcePath, this.plugin);
 
@@ -84,33 +125,39 @@ export class TabPanelsBuilder {
                 // - is NOT last tab, get the start of the next tab
                 // - is last tab, get until the end of the string
                 const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : markdown.length;
-                const contentMarkdown = markdown.substring(tabMatches[i].index ?? 0, contentMarkdownEnd);
+                const contentMarkdown = markdown.substring(tabMatches[i].index, contentMarkdownEnd);
                 // Remove the first line ("--- Tab Name")
-                if (removeTab)
-                    return contentMarkdown.substring(contentMarkdown.indexOf("\n"));
+                if (removeTab) {
+                    const firstNewLinePos = contentMarkdown.indexOf("\n")
+                    if (firstNewLinePos !== -1)
+                        return contentMarkdown.substring(firstNewLinePos);
+                    // This will happen if there is only the first line without any content.
+                    else
+                        return ""; 
+                }
                 else
                     return contentMarkdown;
             }
             
             let resultMarkdown = getMarkdown(true);
+            const codeblocks = Array.from(resultMarkdown.matchAll(codeblockRegex));
 
             // If codeblocks haven't complete, might be nesting tab panels
-            let count = 0;
             do {
-                ++count;
-                // Check for any ``` OR ~~~, allowing any space before it.
-                const codeblocks = resultMarkdown.match(/^ *~{3}|`{3}/gm);
-                const hasTrailingCodeblocks = codeblocks !== null && codeblocks.length % 2 === 1;
-
-                if (hasTrailingCodeblocks && i + 1 < tabMatches.length) {
+                if (this.checkIfCodeblockClosed(codeblocks)) {
+                    break;
+                }
+                else {
                     ++i;
+
+                    // Break if it's the last tab. Can happen if the last tab has an open codeblock
+                    if (i >= tabMatches.length)
+                        break;
+
                     resultMarkdown += getMarkdown(false);
                     continue;
                 }
-                else {
-                    break;
-                }
-            } while (count < 20)
+            } while (i + 1 < tabMatches.length)
             
             const content = createDiv({ parent: contentContainer });
             MarkdownRenderer.render(this.plugin.app, resultMarkdown, content, ctx.sourcePath, this.plugin);
@@ -119,6 +166,32 @@ export class TabPanelsBuilder {
         await this.modifyRenderedContent(markdown, container, ctx);
 
         this.switchTab(defaultTab, tabsContainer, contentContainer, true);
+    }
+
+    checkIfCodeblockClosed(codeblocks: RegExpExecArray[]): boolean {
+        if (codeblocks == null || codeblocks.length === 0)
+            return true;
+
+        // Use a stack to check if the codeblock has closed.
+        const stack: string[] = [];
+        for (const codeblock of codeblocks)
+        {
+            // Find any matching codeblock. 
+            // Matching codeblock = Same string = same syntax (Both ` or both ~) and has the same count
+            const prevIndex = stack.indexOf(codeblock[0]);
+            
+            // If the codeblock syntax already exists, it means that it has matched so it means the codeblock has "closed"
+            // So remove all codeblocks from the starting codeblock to the end (end is the current codeblock syntax)
+            if (prevIndex !== -1) {
+                stack.splice(prevIndex);
+            }
+            // else just push to the stack
+            else {
+                stack.push(codeblock[0]);
+            }
+        }
+
+        return stack.length === 0;
     }
 
     switchTab(tabIndex: number, tabsContainer: HTMLUListElement, contentContainer: HTMLDivElement, isSetup = false) {
