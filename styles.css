@@ -48,15 +48,15 @@ ul.tab-container {
     width: fit-content;
 }
 
-.tab-panel-container li.tab {
+.tab-panel-container .tab {
     /* Remove list styling */
     white-space: nowrap;
     margin-inline-start: 0;
 
     padding: 0.2em 1em 0.6em;
 
-    border-top-left-radius: 0.5em;
-    border-top-right-radius: 0.5em;
+    border-top-left-radius: var(--inner-border-radius);
+    border-top-right-radius: var(--inner-border-radius);
 
     &.selected {
         border: var(--border-width) solid var(--background-modifier-border);
@@ -99,31 +99,93 @@ ul.tab-container {
     }
 }
 
-.highlight-selected-tab-name li.selected.tab {
+.highlight-selected-tab-name .selected.tab {
     color: var(--color-accent);
 }
 
-div.content-container {
+.tab-panel-container .content-container {
     background-color: var(--background-primary);
     padding: 1em;
     border-radius: var(--inner-border-radius);
     box-shadow: 0 0 0 var(--border-width) var(--background-modifier-border);
 }
 
-.content-container > div {
+.tab-panel-container .content-container > div {
     &:not(.selected) {
         display: none;
     }
 
-    & *:first-child {
-        margin-top: 0 !important;
-    }
-
-    & *:last-child {
-        margin-bottom: 0 !important;
+    .rendered-content {
+        & > *:first-child {
+            margin-top: 0 !important;
+        }
+    
+        & > *:last-child {
+            margin-bottom: 0 !important;
+        }
     }
 }
 
 .tab-container .tab:hover {
     cursor: pointer;
+}
+
+.pdf-tab-header {
+    display: none;
+}
+
+/* Only show when "export to pdf" */
+@media print {
+    .tab-scroll-container {
+        display: none;
+    }
+
+    .tab-panel-container .content-container {
+        padding: 0;
+        background-color: var(--background-secondary-alt);
+        box-shadow: none;
+    }
+
+    .tab-panel-container .content-container > div {
+        display: block !important;
+        flex-direction: column;
+        border-radius: var(--inner-border-radius);
+        border-top: none;
+    }
+
+    .tab-panel-container .pdf-tab-header + div:has(.rendered-content) {
+        margin-top: 0;
+    }
+
+    .tab-panel-container .rendered-content {
+        padding: 1em 1em;
+
+        border: var(--border-width) solid var(--background-modifier-border);
+        background-color: var(--background-primary);
+        border-radius: var(--inner-border-radius);
+    }
+
+    .content-container > div  {
+        display: flex !important;
+    }
+
+    .tab-panel-container .pdf-tab-header {
+        display: block;
+        position:relative;
+        
+        width: fit-content;
+        margin-left: 15px;
+
+        &::before, &::after {
+            bottom: 0 !important;
+        }
+
+        p {
+            margin: 0 !important;
+        }
+    }
+
+    .tab-panel-container .content-container > div:not(:first-child) .pdf-tab-header {
+        margin-top: 1em;
+    }
 }

@@ -81,9 +81,9 @@ export class TabPanelsBuilder {
         if (tabMatches.length === 0) {
             tabScrollContainer.classList.add("hide-container")
 
-            const content = createDiv({ parent: contentContainer, cls: "selected" })
-            MarkdownRenderer.render(this.plugin.app, markdown, content, ctx.sourcePath, this.plugin);
-            
+            const content = this.renderMarkdown(contentContainer, "", markdown, ctx.sourcePath);
+            content.classList.add("selected");
+
             if (this.plugin.settings.showNoTabWarning) {
                 const warning = `> [!WARNING] No tabs created\n> To create tabs, use '${this.plugin.settings.tabMarkerSyntax} Tab Name'. \n>For more info: [GitHub README](https://github.com/GnoxNahte/obsidian-tab-panels)\n>To hide this popup: Settings > Hide no tab warning`;
                 MarkdownRenderer.render(this.plugin.app, warning, content, ctx.sourcePath, this.plugin);
@@ -158,14 +158,27 @@ export class TabPanelsBuilder {
                     continue;
                 }
             } while (i + 1 < tabMatches.length)
-            
-            const content = createDiv({ parent: contentContainer });
-            MarkdownRenderer.render(this.plugin.app, resultMarkdown, content, ctx.sourcePath, this.plugin);
+
+            this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx.sourcePath);
         }
 
         await this.modifyRenderedContent(markdown, container, ctx);
 
         this.switchTab(defaultTab, tabsContainer, contentContainer, true);
+    }
+
+    // Separate this function as might need to add tab
+    // Returns the content div that's used as the parent for everything
+    renderMarkdown(parent: HTMLElement, tabName: string, markdown: string, ctxSourcePath: string): HTMLElement {
+        const content = createDiv({ parent: parent });
+        if (tabName) {
+            const pdfTabHeader = createDiv({ parent: content, cls: "pdf-tab-header tab selected"});
+            MarkdownRenderer.render(this.plugin.app, tabName, pdfTabHeader, ctxSourcePath, this.plugin);
+        }
+        const renderedContent = createDiv({ parent: content, cls: "rendered-content" });
+        MarkdownRenderer.render(this.plugin.app, markdown, renderedContent, ctxSourcePath, this.plugin);
+
+        return content;
     }
 
     checkIfCodeblockClosed(codeblocks: RegExpMatchArray[]): boolean {
