@@ -659,16 +659,22 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, pluginCacheData: Cac
 
 // Rebuilding resolved and unresolved links (metadataCache.resolvedLinks and metadataCache.unresolvedLinks)
 // Adds the links to the outResolvedLinks and outUnresolvedLinks arrays.
-function rebuildResolvedLinks(cachedMetadata: CachedMetadata, metadataCache: MetadataCache, path: string) {
+function rebuildResolvedLinks(cachedMetadata: CachedMetadata, metadataCache: MetadataCache, currPath: string) {
     const links = cachedMetadata.links;
-    const resolvedLinks = metadataCache.resolvedLinks[path];
-    const unresolvedLinks = metadataCache.unresolvedLinks[path];
+    const resolvedLinks = metadataCache.resolvedLinks[currPath];
+    const unresolvedLinks = metadataCache.unresolvedLinks[currPath];
 
     if (!links)
         return;
 
     links.forEach((linkCache) => {
-        const link = linkCache.link;
+        if (!(linkCache as TabsLinkCache).isFromTabPanels) 
+            return;
+
+        let link = linkCache.link;
+        const hashIndex = link.indexOf("#");
+        if (hashIndex > 0)
+            link = link.substring(0, hashIndex);
         const file = metadataCache.getFirstLinkpathDest(link, "");
         let filePath = "";
         let linksRef: Record<string, number>;
@@ -687,7 +693,7 @@ function rebuildResolvedLinks(cachedMetadata: CachedMetadata, metadataCache: Met
         if (linksRef[filePath] === undefined) 
             linksRef[filePath] = 0;
         
-        linksRef[path]++;
+        linksRef[filePath]++;
     })
 }
 
