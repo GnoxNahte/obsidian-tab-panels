@@ -14,6 +14,12 @@ Template to copy:
 -->
 
 ## [1.1.6](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.6) (2025-01-07)
+**Bugs Fixed**
+- Fix #23 and #22 (same bug causing the issue): Fix wrongly adding the source file as an "Unresolved links"
+- Fix wrongly adding the heading to "Resolved links". E.g. for links like "[[Note#Heading]]", previously would add "Note#Heading" but now it should only add "Note".
+- Fix readding links outside of tab panels to "resolved links".
+
+## [1.1.6](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.6) (2025-01-07)
 
 **New Features & Improvements:**
 - #18: Add support when using "Export to pdf". This just shows all the tabs spread out, something like this.
