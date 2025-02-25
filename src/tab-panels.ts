@@ -104,14 +104,24 @@ export class TabPanelsBuilder {
             // === Create tab ===
             // Get tab title
             let tabText = tabMatches[i][1];
+            let cssClass: string[] = [];
             
             // Set default tab
-            const getDefaultPosRegex = tabText.match(/\(default\)\s*$/i);
-            if (getDefaultPosRegex) {
+            const defaultRegexMatch = tabText.match(/\(default\)\s*/i);
+            if (defaultRegexMatch && defaultRegexMatch.index) {
                 defaultTab = tabIndex;
-                tabText = tabText.substring(0, getDefaultPosRegex.index);
+                tabText = tabText.substring(defaultRegexMatch.index, defaultRegexMatch.index + defaultRegexMatch[0].length);
+            }
+
+            const cssClassMatch = tabText.match(/\(css-?class: *([ \w-]*)\)/i);
+            if (cssClassMatch && cssClassMatch.index) {
+                cssClass = cssClassMatch[1].split(" ").filter((input) => input);
+                tabText = tabText.substring(0, cssClassMatch.index);
             }
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
+
+            if (cssClass)
+                tab.addClasses(cssClass);
 
             // If pass in tabIndex directly, it'll keep returning the number of tabs as the click event is called after all the parsing is done.
             const currTabIndex = tabIndex; 
@@ -159,7 +169,9 @@ export class TabPanelsBuilder {
                 }
             } while (i + 1 < tabMatches.length)
 
-            this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx.sourcePath);
+            const content = this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx.sourcePath);
+            if (cssClass)
+                content.addClasses(cssClass);
         }
 
         await this.modifyRenderedContent(markdown, container, ctx);
