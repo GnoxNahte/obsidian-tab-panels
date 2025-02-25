@@ -4,7 +4,7 @@ DO THIS, DON'T COPY:
 
 Template to copy:
 
-## [1.1.x](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.x) (2025-xx-xx)
+## [1.1.x](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.x) (2025-xx-xx)
 
 **New Features & Improvements:**
 - 
@@ -13,13 +13,18 @@ Template to copy:
 - 
 -->
 
-## [1.1.6](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.6) (2025-01-07)
-**Bugs Fixed**
+## [1.1.8](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.8) (2025-02-25)
+
+**New Features & Improvements:**
+- Add ability to add custom css classes to tabs. Feature for #27
+
+## [1.1.7](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.7) (2025-02-25)
+**Bugs Fixed:**
 - Fix #23 and #22 (same bug causing the issue): Fix wrongly adding the source file as an "Unresolved links"
 - Fix wrongly adding the heading to "Resolved links". E.g. for links like "[[Note#Heading]]", previously would add "Note#Heading" but now it should only add "Note".
 - Fix readding links outside of tab panels to "resolved links".
 
-## [1.1.6](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.6) (2025-01-07)
+## [1.1.6](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.6) (2025-01-07)
 
 **New Features & Improvements:**
 - #18: Add support when using "Export to pdf". This just shows all the tabs spread out, something like this.
@@ -33,7 +38,7 @@ Template to copy:
 **Bugs Fixed:**
 - Fix minor nesting bug from previous release.
 
-## [1.1.5](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.5) (2025-01-07)
+## [1.1.5](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.5) (2025-01-07)
 
 **New Features & Improvements:**
 - #16: Change cursor type to pointer when hovering on a tab
@@ -44,12 +49,12 @@ Template to copy:
 - Fix nesting tab panels. Previously was only able to nest 1 level down. Now can nest as many as you want (Tested 10 levels)
 - Fix edge case error when there is an open codeblock before the first tab. Now it'll ignore the tab as the tab is "in" the codeblock.
 
-## [1.1.4](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.4) (2024-12-27)
+## [1.1.4](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.4) (2024-12-27)
 
 **Bugs Fixed:**
 - Fix #14 and #11 Fix cache not updating when opening a note on a new tab and on startup
 
-## [1.1.3](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.3) (2024-12-19)
+## [1.1.3](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.3) (2024-12-19)
 
 **Bugs Fixed:**
 - #11: Correct position in note when clicking on heading in Outline (Table of Content)
@@ -61,12 +66,12 @@ Template to copy:
 
 Info on how this fix works any why it the stuff in the warning can't be fixed: [comment in #11](https://github.com/GnoxNahte/obsidian-tab-panels/issues/11#issuecomment-2551351202) - Check the "How it works"
 
-## [1.1.2](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.2) (2025-12-11)
+## [1.1.2](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.2) (2025-12-11)
 
 **New Features & Improvements:**
 - #5: Added caching support for footnotes
 
-## [1.1.1](https://github.com/GnoxNahte/obsidian-auto-embed/tree/1.1.1) (2024-12-07)
+## [1.1.1](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.1) (2024-12-07)
 
 **New Features & Improvements:**
 - #6 - Introduced a new setting allowing you to define your syntax for marking a tab.<br>

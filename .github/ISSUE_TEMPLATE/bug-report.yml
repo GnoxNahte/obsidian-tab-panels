@@ -47,7 +47,7 @@ body:
       description:  |  
         What version are you using?
         If left blank, I'll assume it's the latest version
-      placeholder: 1.1.7
+      placeholder: 1.1.8
   - type: dropdown
     id: os
     attributes:
