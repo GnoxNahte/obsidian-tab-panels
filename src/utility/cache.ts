@@ -177,6 +177,9 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
     // (`{3,}|~{3,}): 1st capture group (need to capture to match "\1" at the end)
     //      Matches: [` 3 or unlimited times] OR [~ 3 or unlimited times]
     // <space>*: Matches any spaces 0 to unlimited times
+    // <codeblock Keyword>: Exactly match keyword
+    // [\w ]: Match any word and space that goes after that. 
+    //      For some reason, obsidian also accepts this but doesn't consider it as the codeblock keyword
     // \n: Match new line
     // ([\s\S]*?): 2nd capture group (markdown content)
     //      Matches any character, including line breaks. As few times as possible, expanding as needed (Lazy)
@@ -205,6 +208,17 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
             console.error("Tab panels: Error when parsing markdown, splitting markdown blocks. Match index === undefined\nMatch:", match);
             return;
         }
+        let codeblockMarkdown = match[2];
+        // Same regex as above, except it matches all codeblocks without the codeblock keyword
+        const codeblockRegex = new RegExp(`^ {0,3}(\`{3,}|~{3,}) *(?!${plugin.settings.codeblockKeyword})[ \\w]*\n([\\s\\S]*?)\\1`, 'gm');
+        const codeblocks = [...codeblockMarkdown.matchAll(codeblockRegex)];
+        
+        // Remove all the parts with codeblocks
+        // Loop starting from the back since removing strings will modify the positions
+        for (let i = codeblocks.length - 1; i >= 0; i--) {
+            codeblockMarkdown = codeblockMarkdown.substring(0, codeblocks[i].index) + codeblockMarkdown.substring(codeblocks[i].index + codeblocks[i][0].length);
+        }
+
         const textBefore = markdown.slice(lastIndex, match.index);
         lastIndex = match.index;
         // Add the line numbers. TODO: Optimise this? Split creates new array
@@ -220,7 +234,6 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
         }
 
         // Get second capture group and update the cache
-        const codeblockMarkdown = match[2];
         const currHasItemsInCache = rebuildCacheMetadata(codeblockMarkdown, locOffset, cacheData);
         
         if (currHasItemsInCache) {
