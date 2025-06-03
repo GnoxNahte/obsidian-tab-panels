@@ -105,6 +105,7 @@ export class TabPanelsBuilder {
             // Get tab title
             let tabText = tabMatches[i][1];
             let cssClass: string[] = [];
+            let cssStyles = "";
             
             // Set default tab
             const defaultRegexMatch = tabText.match(/\(default\)\s*/i);
@@ -115,13 +116,25 @@ export class TabPanelsBuilder {
 
             const cssClassMatch = tabText.match(/\(css-?class: *([ \w-]*)\)/i);
             if (cssClassMatch && cssClassMatch.index) {
+                // Filter removes any empty values, input is truthy/falsy
                 cssClass = cssClassMatch[1].split(" ").filter((input) => input);
-                tabText = tabText.substring(0, cssClassMatch.index);
+                tabText = tabText.substring(0, cssClassMatch.index) + tabText.substring(cssClassMatch.index + cssClassMatch[0].length);
             }
+            
+            const cssStylesMatch = tabText.match(/\(css-?styles?:[ "]*([ :;\w-]*)[ "]*\)/i);
+            if (cssStylesMatch && cssStylesMatch.index) {
+                cssStyles = cssStylesMatch[1];
+                tabText = tabText.substring(0, cssStylesMatch.index) + tabText.substring(cssStylesMatch.index + cssStylesMatch[0].length);
+            }
+
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
 
             if (cssClass)
                 tab.addClasses(cssClass);
+
+            if (cssStyles) {
+                tab.style = cssStyles;
+            }
 
             // If pass in tabIndex directly, it'll keep returning the number of tabs as the click event is called after all the parsing is done.
             const currTabIndex = tabIndex; 
@@ -170,8 +183,13 @@ export class TabPanelsBuilder {
             } while (i + 1 < tabMatches.length)
 
             const content = this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx.sourcePath);
+
             if (cssClass)
                 content.addClasses(cssClass);
+
+            if (cssStyles) {
+                tab.style = cssStyles;
+            }
         }
 
         await this.modifyRenderedContent(markdown, container, ctx);
