@@ -1,4 +1,4 @@
-import { MarkdownPostProcessorContext, MarkdownRenderer } from "obsidian";
+import { EditorPosition, MarkdownPostProcessorContext, MarkdownRenderer } from "obsidian";
 import TabPanelsPlugin from "./main";
 import { headingRegex, inlineFootnoteRegex } from "./utility/constants";
 
@@ -80,8 +80,7 @@ export class TabPanelsBuilder {
         // Just render the content without any tabs and return
         if (tabMatches.length === 0) {
             tabScrollContainer.classList.add("hide-container")
-
-            const content = this.renderMarkdown(contentContainer, "", markdown, ctx.sourcePath);
+            const content = this.renderMarkdown(contentContainer, "", markdown, ctx, 0, this.countNewLines(markdown) + 1);
             content.classList.add("selected");
 
             if (this.plugin.settings.showNoTabWarning) {
@@ -98,42 +97,37 @@ export class TabPanelsBuilder {
         // Incrementing at the start of the loop so start at -1.
         let tabIndex = -1; 
 
+        let lineOffset = 1 + this.countNewLines(markdown.substring(0, tabMatches[0].index));
+
         for (let i = 0; i < tabMatches.length; i++) {
             ++tabIndex;
 
             // === Create tab ===
             // Get tab title
             let tabText = tabMatches[i][1];
-            let cssClass: string[] = [];
-            let cssStyles = "";
             
+            const tab = createEl("li", { cls: "tab", parent: tabsContainer });
+
             // Set default tab
             const defaultRegexMatch = tabText.match(/\(default\)\s*/i);
             if (defaultRegexMatch && defaultRegexMatch.index) {
                 defaultTab = tabIndex;
-                tabText = tabText.substring(defaultRegexMatch.index, defaultRegexMatch.index + defaultRegexMatch[0].length);
+                tabText = tabText.replace(defaultRegexMatch[0], "");
             }
 
+            // Get any user-defined classes (per tab)
             const cssClassMatch = tabText.match(/\(css-?class: *([ \w-]*)\)/i);
             if (cssClassMatch && cssClassMatch.index) {
                 // Filter removes any empty values, input is truthy/falsy
-                cssClass = cssClassMatch[1].split(" ").filter((input) => input);
+                tab.addClasses(cssClassMatch[1].split(" ").filter((input) => input));
                 tabText = tabText.substring(0, cssClassMatch.index) + tabText.substring(cssClassMatch.index + cssClassMatch[0].length);
             }
             
+            // Get any user-defined styles (per tab)
             const cssStylesMatch = tabText.match(/\(css-?styles?:[ "]*([ :;\w-]*)[ "]*\)/i);
             if (cssStylesMatch && cssStylesMatch.index) {
-                cssStyles = cssStylesMatch[1];
+                tab.style = cssStylesMatch[1];
                 tabText = tabText.substring(0, cssStylesMatch.index) + tabText.substring(cssStylesMatch.index + cssStylesMatch[0].length);
-            }
-
-            const tab = createEl("li", { cls: "tab", parent: tabsContainer });
-
-            if (cssClass)
-                tab.addClasses(cssClass);
-
-            if (cssStyles) {
-                tab.style = cssStyles;
             }
 
             // If pass in tabIndex directly, it'll keep returning the number of tabs as the click event is called after all the parsing is done.
@@ -144,16 +138,15 @@ export class TabPanelsBuilder {
             // === Create content ===
             const getMarkdown = (removeTab: boolean): string => {
                 // Get where the content for this markdown ends
-                // If 
-                // - is NOT last tab, get the start of the next tab
-                // - is last tab, get until the end of the string
-                const contentMarkdownEnd = (i < tabMatches.length - 1) ? tabMatches[i + 1].index : markdown.length;
+                const contentMarkdownEnd = (i < tabMatches.length - 1) ?    // Check is last tab?
+                                            tabMatches[i + 1].index - 1:       // Get the start of the next tab. - 1 to remove '\n' 
+                                            markdown.length;                // Get until the end of the string
                 const contentMarkdown = markdown.substring(tabMatches[i].index ?? 0, contentMarkdownEnd);
                 // Remove the first line ("--- Tab Name")
                 if (removeTab) {
-                    const firstNewLinePos = contentMarkdown.indexOf("\n")
+                    const firstNewLinePos = contentMarkdown.indexOf("\n");
                     if (firstNewLinePos !== -1)
-                        return contentMarkdown.substring(firstNewLinePos);
+                        return contentMarkdown.substring(firstNewLinePos + 1); // + 1 so it doesn't capture "\n" from the start. -1 to remove "\n" from the end
                     // This will happen if there is only the first line without any content.
                     else
                         return ""; 
@@ -165,6 +158,20 @@ export class TabPanelsBuilder {
             let resultMarkdown = getMarkdown(true);
             
             // If codeblocks haven't complete, might be nesting tab panels
+            // Might be something like:
+            // ````tabs
+            // Text
+            // ```tabs
+            // --- Nested Tab 1
+            // ```
+            // ````
+            // OR
+            // ````tabs
+            // --- Tab 1
+            // ```tabs
+            // --- Tab 2
+            // ```
+            // ````
             do {
                 const codeblocks = Array.from(resultMarkdown.matchAll(codeblockRegex));
                 if (this.checkIfCodeblockClosed(codeblocks)) {
@@ -180,16 +187,13 @@ export class TabPanelsBuilder {
                     resultMarkdown += getMarkdown(false);
                     continue;
                 }
-            } while (i + 1 < tabMatches.length)
+            } while (i + 1 < tabMatches.length);
 
-            const content = this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx.sourcePath);
+            const lineCount = this.countNewLines(resultMarkdown) + 1;
 
-            if (cssClass)
-                content.addClasses(cssClass);
+            this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx, lineOffset, lineCount);
 
-            if (cssStyles) {
-                tab.style = cssStyles;
-            }
+            lineOffset += lineCount + 1;
         }
 
         await this.modifyRenderedContent(markdown, container, ctx);
@@ -199,16 +203,95 @@ export class TabPanelsBuilder {
 
     // Separate this function as might need to add tab
     // Returns the content div that's used as the parent for everything
-    renderMarkdown(parent: HTMLElement, tabName: string, markdown: string, ctxSourcePath: string): HTMLElement {
+    renderMarkdown(parent: HTMLElement, tabName: string, markdown: string, ctx: MarkdownPostProcessorContext, markdownLineStart: number, lineCount: number): HTMLElement {
         const content = createDiv({ parent: parent });
+        const container = parent.parentElement as HTMLElement; // The div which is the code-block given by Obsidian
+
+        // Tab for pdf
         if (tabName) {
             const pdfTabHeader = createDiv({ parent: content, cls: "pdf-tab-header tab selected"});
-            MarkdownRenderer.render(this.plugin.app, tabName, pdfTabHeader, ctxSourcePath, this.plugin);
+            MarkdownRenderer.render(this.plugin.app, tabName, pdfTabHeader, ctx.sourcePath, this.plugin);
         }
+
+        // Actual content
         const renderedContent = createDiv({ parent: content, cls: "rendered-content" });
-        MarkdownRenderer.render(this.plugin.app, markdown, renderedContent, ctxSourcePath, this.plugin);
+        MarkdownRenderer.render(this.plugin.app, markdown, renderedContent, ctx.sourcePath, this.plugin);
+
+        if (!this.plugin.settings.enableEditableTabs || 
+            container.parentElement?.closest(".tab-panel-container") != null || // Is nested?
+            container.closest(".el-pre") != null // Is reading view
+        )
+            return content;
+
+        // Editable content
+        const editableContent = createEl("textarea", { parent: content,  text: markdown})
+
+        editableContent.addEventListener("keydown", (ev) => {
+            if (this.plugin.settings.enterToExitEditing && 
+                !ev.shiftKey && ev.key == "Enter") {
+                editableContent.blur();
+            }
+        })
+
+        editableContent.addEventListener("focusout", ()=> {
+            const sectionInfo = ctx.getSectionInfo(container.firstElementChild as HTMLElement);
+            if (!sectionInfo) {
+                console.error("Tab panels: Can't find section");
+                return;
+            }
+            if (markdown === editableContent.value){
+                this.toggleEditableContent(renderedContent, editableContent, false);
+                return;
+            }
+            const lineOffset = sectionInfo.lineStart + markdownLineStart + 1;
+            this.toggleEditableContent(renderedContent, editableContent, false);
+            this.replaceContent(lineOffset, lineOffset + lineCount, editableContent.value);
+        })
+
+        // Editable content events
+        renderedContent.addEventListener("click", (ev)=> {
+            ev.stopImmediatePropagation();
+            this.toggleEditableContent(renderedContent, editableContent, true)
+        });
+
+        this.toggleEditableContent(renderedContent, editableContent, false);
 
         return content;
+    }
+
+    toggleEditableContent(renderedContent: HTMLElement, editableContent: HTMLElement, ifEditable: boolean) {
+        const hideClass = "hide-content";
+        renderedContent.classList.toggle(hideClass, ifEditable);
+        editableContent.classList.toggle(hideClass, !ifEditable);
+
+        if (ifEditable) {
+            editableContent.focus();
+        }
+    }
+
+    replaceContent(startLine: number, endLine: number, replacedText: string) {
+        replacedText += "\n";
+        const editor = this.plugin.app.workspace.activeEditor?.editor;
+        if (!editor)
+        {
+            console.error("Tab Panels: Can't find editor");
+            return;
+        }
+
+        const start: EditorPosition = {
+            line: startLine,
+            ch: 0,
+        }
+
+        const end: EditorPosition = {
+            line: endLine,
+            ch: 0,
+        }
+
+        // console.log("Before replace (", startLine, " - ", endLine, ")\n:", editor.getRange(start, end));
+
+        editor.replaceRange(replacedText, start, end);
+        // console.log("After (", startLine, " - ", endLine, ")\n:", replacedText);
     }
 
     checkIfCodeblockClosed(codeblocks: RegExpMatchArray[]): boolean {
@@ -308,6 +391,7 @@ export class TabPanelsBuilder {
         // Markdown from start of file to before the code block
         const sectionInfo = ctx.getSectionInfo(container);
 
+        // Might happen for nested tab panels
         if (!sectionInfo) {
             console.log("Tab Panels: Section info returning null");
             return null;
@@ -407,5 +491,9 @@ export class TabPanelsBuilder {
 				headingInPlugin.scrollIntoView(); 
 			})
 		})
+    }
+
+    countNewLines(markdown: string): number {
+        return (markdown.match(/\n/g) || '').length;
     }
 }

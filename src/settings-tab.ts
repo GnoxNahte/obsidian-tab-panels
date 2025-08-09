@@ -6,6 +6,8 @@ export interface TabPanelsSettings {
 	codeblockKeyword: string;
     tabMarkerSyntax: string;
     showNoTabWarning: boolean;
+    enableEditableTabs: boolean;
+    enterToExitEditing: boolean;
 
     // Styling
     highlightSelectedTabName: boolean;
@@ -19,6 +21,8 @@ export const DEFAULT_SETTINGS: TabPanelsSettings = {
 	codeblockKeyword: 'tabs',
     tabMarkerSyntax: '---',
     showNoTabWarning: true,
+    enableEditableTabs: false,
+    enterToExitEditing: true,
 
     // Styling
     highlightSelectedTabName: true,
@@ -115,6 +119,38 @@ export class TabPanelsTab extends PluginSettingTab {
         new Setting(containerEl)
             .setHeading()
             .setName("Experimental");
+        
+        const enableEditableTabsDescription = new DocumentFragment();
+        enableEditableTabsDescription.appendText("Allows editing tabs by clicking on it.\n");
+        enableEditableTabsDescription.appendChild(createEl("a", { text: " Learn more", href: "https://github.com/GnoxNahte/obsidian-tab-panels/tree/main#editable-tabs-experimental"}));
+        enableEditableTabsDescription.appendChild(createEl("div", {text: "Since this feature will modify the vault and is experimental, it's recommended to have a backup of the vault.", cls: "mod-warning"}));
+        enableEditableTabsDescription.appendChild(createEl("div", {text: "It generally works well but may behave unexpectedly depending on your plugins and theme.", cls: "mod-warning"}));
+
+        new Setting(containerEl)
+            .setName("Enable editable tabs")
+            .setDesc(enableEditableTabsDescription)
+            .addToggle(toggle => toggle
+                .setValue(settings.enableEditableTabs)
+                .onChange(async (value) => {
+                    settings.enableEditableTabs = value;
+                    new Notice("Reload the vault to see changes", 5000);
+                    await this.plugin.saveSettings();
+                    this.display();
+                })
+            )
+
+        if (settings.enableEditableTabs) {
+            new Setting(containerEl)
+            .setName("Enter to exit editing")
+            .setDesc("When enabled, the Enter key will close the text field. Use Shift + Enter for a new line.")
+            .addToggle(toggle => toggle
+                .setValue(settings.enterToExitEditing)
+                .onChange(async (value) => {
+                    settings.enterToExitEditing = value;
+                    await this.plugin.saveSettings();
+                })
+            )
+        }
         
         const enableCachingDescription = new DocumentFragment();
         enableCachingDescription.appendText("Add additional information to Obsidian's cache.\n")

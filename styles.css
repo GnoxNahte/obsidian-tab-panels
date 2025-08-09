@@ -130,6 +130,16 @@ ul.tab-container {
     cursor: pointer;
 }
 
+.tab-panel-container .hide-content {
+    display: none;
+}
+
+.tab-panel-container textarea {
+    width: 100%;
+    field-sizing: content;
+    resize: none;
+}
+
 .pdf-tab-header {
     display: none;
 }
@@ -189,3 +199,16 @@ ul.tab-container {
         margin-top: 1em;
     }
 }
+
+/* Test focus */
+/* *:focus {
+    border: 3px solid yellow;
+}
+
+*:focus-visible {
+    border: 3px solid red;
+}
+
+code:focus {
+    background-color: red;
+} */
