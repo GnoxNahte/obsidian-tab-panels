@@ -38,6 +38,7 @@ Content for tab 2
 > 
 
 ## Additional Features
+These features are off by default. Go to settings to enable them.
 ### Cache (Experimental)
 The cache feature enables Obsidian to process data inside the tab panels, just like it does for regular markdown content. This means that **links, headings, and tags** within tab panels are now fully integrated with Obsidian's core functionality.
 
@@ -62,6 +63,17 @@ What this enables (similar to Obsidian's standard behaviour, but **now works in 
 > - To remove all cache from this plugin:
 > 	1. Disable caching
 >   2. Reload Obsidian
+
+### Editing content (Experimental)
+Click on the content to edit it.
+![5e387e45-71c4-424b-b5ce-6ab568857b3e](https://github.com/user-attachments/assets/012b6c5b-8125-463e-9f1a-be1f04d37100)
+
+Left - Live Preview <br>
+Right - Source mode <br>
+
+> [!WARNING]
+> Since this feature will modify the vault and is experimental, it's recommended to have a backup of the vault. <br>
+> It works on my vault but I'm not sure how well it works with different themes and plugins.
 
 <!-- TODO: ## Styles -->
 
@@ -91,7 +103,7 @@ print("Goodbye world!")
 ~~~
 `````
 
-### Editing tab content
+### Interactivty with content
 The plugin will only display a read-only version of the notes. Any interactivity will be lost. For example, checking a checkbox will not work.
 
 ### Caching - Footnotes

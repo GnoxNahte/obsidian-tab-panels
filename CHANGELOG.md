@@ -1,10 +1,10 @@
 <!-- Template
 DO THIS, DON'T COPY: 
-- REPLACE 1.0.x (link title and url tree link) AND DATE
+- REPLACE 1.2.x (link title and url tree link) AND DATE
 
 Template to copy:
 
-## [1.1.x](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.x) (2025-xx-xx)
+## [1.2.x](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.x) (2025-xx-xx)
 
 **New Features & Improvements:**
 - 
@@ -12,6 +12,23 @@ Template to copy:
 **Bugs Fixed:**
 - 
 -->
+## [1.2.0](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.0) (2025-08-10)
+
+**New Features & Improvements:**
+### Editing content (Experimental)
+Click on the content to edit it.
+![5e387e45-71c4-424b-b5ce-6ab568857b3e](https://github.com/user-attachments/assets/012b6c5b-8125-463e-9f1a-be1f04d37100)
+
+Left - Live Preview <br>
+Right - Source mode <br>
+
+> [!WARNING]
+> Since this feature will modify the vault and is experimental, it's recommended to have a backup of the vault. <br>
+> It works on my vault but I'm not sure how well it works with different themes and plugins.
+
+**Bugs Fixed:**
+- Fix #33 - Add css styles to tabs
+- Fix #26 - Don't process caching for codeblocks
 
 ## [1.1.8](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.1.8) (2025-02-25)
 
