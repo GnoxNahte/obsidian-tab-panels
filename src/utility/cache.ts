@@ -216,7 +216,11 @@ export async function updateCacheFromFile(plugin: TabPanelsPlugin, file: TFile, 
         // Remove all the parts with codeblocks
         // Loop starting from the back since removing strings will modify the positions
         for (let i = codeblocks.length - 1; i >= 0; i--) {
-            codeblockMarkdown = codeblockMarkdown.substring(0, codeblocks[i].index) + codeblockMarkdown.substring(codeblocks[i].index + codeblocks[i][0].length);
+            const codeblockMatch = codeblocks[i];
+            if (codeblockMatch.index == null)
+                continue;
+            codeblockMarkdown = codeblockMarkdown.substring(0, codeblockMatch.index) + 
+                                codeblockMarkdown.substring(codeblockMatch.index + codeblockMatch[0].length);
         }
 
         const textBefore = markdown.slice(lastIndex, match.index);

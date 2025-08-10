@@ -126,7 +126,7 @@ export class TabPanelsBuilder {
             // Get any user-defined styles (per tab)
             const cssStylesMatch = tabText.match(/\(css-?styles?:[ "]*([ :;\w-]*)[ "]*\)/i);
             if (cssStylesMatch && cssStylesMatch.index) {
-                tab.style = cssStylesMatch[1];
+                tab.style.cssText = cssStylesMatch[1];
                 tabText = tabText.substring(0, cssStylesMatch.index) + tabText.substring(cssStylesMatch.index + cssStylesMatch[0].length);
             }
 
@@ -137,10 +137,13 @@ export class TabPanelsBuilder {
 
             // === Create content ===
             const getMarkdown = (removeTab: boolean): string => {
+                const markdownEnd = markdown.length;
+                const nextMatchIndex = tabMatches[i + 1]?.index ?? markdownEnd;
+
                 // Get where the content for this markdown ends
-                const contentMarkdownEnd = (i < tabMatches.length - 1) ?    // Check is last tab?
-                                            tabMatches[i + 1].index - 1:       // Get the start of the next tab. - 1 to remove '\n' 
-                                            markdown.length;                // Get until the end of the string
+                const contentMarkdownEnd = i < tabMatches.length - 1 // Check is last tab?
+                                            ? nextMatchIndex - 1     // Get the start of the next tab. - 1 to remove '\n' 
+                                            : markdownEnd;           // Get until the end of the string
                 const contentMarkdown = markdown.substring(tabMatches[i].index ?? 0, contentMarkdownEnd);
                 // Remove the first line ("--- Tab Name")
                 if (removeTab) {
