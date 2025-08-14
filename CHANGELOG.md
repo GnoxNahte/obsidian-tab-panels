@@ -12,6 +12,12 @@ Template to copy:
 **Bugs Fixed:**
 - 
 -->
+
+## [1.2.1](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.1) (2025-08-14)
+
+**Bugs Fixed:**
+- Fix #33 Add back css classes and styles to content.
+
 ## [1.2.0](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.0) (2025-08-10)
 
 **New Features & Improvements:**
