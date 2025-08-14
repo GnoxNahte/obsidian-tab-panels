@@ -122,7 +122,7 @@ export class TabPanelsTab extends PluginSettingTab {
         
         const enableEditableTabsDescription = new DocumentFragment();
         enableEditableTabsDescription.appendText("Allows editing tabs by clicking on it.\n");
-        enableEditableTabsDescription.appendChild(createEl("a", { text: " Learn more", href: "https://github.com/GnoxNahte/obsidian-tab-panels/tree/main#editable-tabs-experimental"}));
+        enableEditableTabsDescription.appendChild(createEl("a", { text: " Learn more", href: "https://github.com/GnoxNahte/obsidian-tab-panels/tree/main?tab=readme-ov-file#editing-content-experimental"}));
         enableEditableTabsDescription.appendChild(createEl("div", {text: "Since this feature will modify the vault and is experimental, it's recommended to have a backup of the vault.", cls: "mod-warning"}));
         enableEditableTabsDescription.appendChild(createEl("div", {text: "It generally works well but may behave unexpectedly depending on your plugins and theme.", cls: "mod-warning"}));
 

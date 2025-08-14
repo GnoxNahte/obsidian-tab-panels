@@ -105,6 +105,8 @@ export class TabPanelsBuilder {
             // === Create tab ===
             // Get tab title
             let tabText = tabMatches[i][1];
+            let cssClass: string[] = [];
+            let cssStyles = "";
             
             const tab = createEl("li", { cls: "tab", parent: tabsContainer });
 
@@ -119,14 +121,16 @@ export class TabPanelsBuilder {
             const cssClassMatch = tabText.match(/\(css-?class: *([ \w-]*)\)/i);
             if (cssClassMatch && cssClassMatch.index) {
                 // Filter removes any empty values, input is truthy/falsy
-                tab.addClasses(cssClassMatch[1].split(" ").filter((input) => input));
+                cssClass = cssClassMatch[1].split(" ").filter((input) => input);
+                tab.addClasses(cssClass);
                 tabText = tabText.substring(0, cssClassMatch.index) + tabText.substring(cssClassMatch.index + cssClassMatch[0].length);
             }
             
             // Get any user-defined styles (per tab)
             const cssStylesMatch = tabText.match(/\(css-?styles?:[ "]*([ :;\w-]*)[ "]*\)/i);
             if (cssStylesMatch && cssStylesMatch.index) {
-                tab.style.cssText = cssStylesMatch[1];
+                cssStyles = cssStylesMatch[1];
+                tab.style.cssText = cssStyles;
                 tabText = tabText.substring(0, cssStylesMatch.index) + tabText.substring(cssStylesMatch.index + cssStylesMatch[0].length);
             }
 
@@ -194,7 +198,13 @@ export class TabPanelsBuilder {
 
             const lineCount = this.countNewLines(resultMarkdown) + 1;
 
-            this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx, lineOffset, lineCount);
+            const content = this.renderMarkdown(contentContainer, tabText, resultMarkdown, ctx, lineOffset, lineCount);
+            
+            if (cssClass)
+                content.addClasses(cssClass);
+
+            if (cssStyles) 
+                content.style.cssText = cssStyles;
 
             lineOffset += lineCount + 1;
         }
