@@ -13,6 +13,11 @@ Template to copy:
 - 
 -->
 
+## [1.2.2](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.2) (2025-10-16)
+
+**Bugs Fixed:**
+- Fix #41 Overlapping css with other plugin
+
 ## [1.2.1](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.1) (2025-08-14)
 
 **Bugs Fixed:**
