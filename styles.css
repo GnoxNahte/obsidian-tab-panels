@@ -38,7 +38,11 @@
     }
 }
 
-ul.tab-container {
+.tab-panel-container .tab-container .tab:hover {
+    cursor: pointer;
+}
+
+.tab-panel-container ul.tab-container {
     /* margin: 0 7px; */
     display: flex;
     list-style: none;
@@ -46,6 +50,11 @@ ul.tab-container {
     margin: 0 15px;
     gap: 0.2em;
     width: fit-content;
+
+    /* Fix overlapping CSS with other plugins */
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: visible;
 }
 
 .tab-panel-container .tab {
@@ -124,10 +133,6 @@ ul.tab-container {
             margin-bottom: 0 !important;
         }
     }
-}
-
-.tab-container .tab:hover {
-    cursor: pointer;
 }
 
 .tab-panel-container .hide-content {
