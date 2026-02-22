@@ -136,7 +136,10 @@ export class TabPanelsBuilder {
 
             // If pass in tabIndex directly, it'll keep returning the number of tabs as the click event is called after all the parsing is done.
             const currTabIndex = tabIndex; 
-            tab.addEventListener("click", () => this.switchTab(currTabIndex, tabsContainer, contentContainer))
+            tab.addEventListener("click", (ev) => {
+                ev.stopPropagation();
+                this.switchTab(currTabIndex, tabsContainer, contentContainer);
+            })
             MarkdownRenderer.render(this.plugin.app, tabText, tab, ctx.sourcePath, this.plugin);
 
             // === Create content ===
