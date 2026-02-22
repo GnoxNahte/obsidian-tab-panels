@@ -13,6 +13,12 @@ Template to copy:
 - 
 -->
 
+## [1.2.3](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.3) (2025-02-22)
+
+**Bugs Fixed:**
+- Fix #42 Update plugin to use Obsidian's SettingGroup
+- Fix #40 Prevent editable tabs from activating if switching nested tabs.
+
 ## [1.2.2](https://github.com/GnoxNahte/obsidian-tab-panels/tree/1.2.2) (2025-10-16)
 
 **Bugs Fixed:**
