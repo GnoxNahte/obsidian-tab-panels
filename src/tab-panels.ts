@@ -24,7 +24,7 @@ export class TabPanelsBuilder {
             container.classList.add("highlight-selected-tab-name");
         }
 
-        const tabScrollContainer = createEl("div", { cls: "tab-scroll-container", parent: container });
+        const tabScrollContainer = createDiv({ cls: "tab-scroll-container", parent: container });
         const tabsContainer = createEl("ul", { cls: "tab-container", parent: tabScrollContainer });
         const contentContainer = createDiv({ cls: "content-container", parent: container });
 
@@ -447,7 +447,7 @@ export class TabPanelsBuilder {
         const footnoteElements = tabContentContainer.querySelectorAll("a.footnote-link[data-footref]",);
 
         const matches = [...markdown.matchAll(inlineFootnoteRegex)];
-        matches.forEach((match, index) => {
+        matches.forEach((_, index) => {
             const footnote = footnoteElements[index] as HTMLElement;
             footnote.dataset.footref = `[inline${index + footnoteCount}`
         })

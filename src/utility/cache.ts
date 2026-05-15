@@ -654,7 +654,7 @@ function addToMetadataCache(cachedMetadata: CachedMetadata, pluginCacheData: Cac
 
         cachedMetadata.footnotes.sort(sortCacheByOffset);
         let inlineCount = 0;
-        cachedMetadata.footnotes.forEach((value, index) => {
+        cachedMetadata.footnotes.forEach((value) => {
             if (value.id.startsWith("[inline"))
                 value.id = `[inline${inlineCount++}`
         });

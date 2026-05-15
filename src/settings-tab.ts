@@ -131,8 +131,8 @@ export class TabPanelsTab extends PluginSettingTab {
             const enableEditableTabsDescription = new DocumentFragment();
             enableEditableTabsDescription.appendText("Allows editing tabs by clicking on it.\n");
             enableEditableTabsDescription.appendChild(createEl("a", { text: " Learn more", href: "https://github.com/GnoxNahte/obsidian-tab-panels/tree/main?tab=readme-ov-file#editing-content-experimental"}));
-            enableEditableTabsDescription.appendChild(createEl("div", {text: "Since this feature will modify the vault and is experimental, it's recommended to have a backup of the vault.", cls: "mod-warning"}));
-            enableEditableTabsDescription.appendChild(createEl("div", {text: "It generally works well but may behave unexpectedly depending on your plugins and theme.", cls: "mod-warning"}));
+            enableEditableTabsDescription.appendChild(createDiv({text: "Since this feature will modify the vault and is experimental, it's recommended to have a backup of the vault.", cls: "mod-warning"}));
+            enableEditableTabsDescription.appendChild(createDiv({text: "It generally works well but may behave unexpectedly depending on your plugins and theme.", cls: "mod-warning"}));
 
             setting
                 .setName("Enable editable tabs")
@@ -174,7 +174,7 @@ export class TabPanelsTab extends PluginSettingTab {
             enableCachingDescription.appendChild(createEl("br"))
             enableCachingDescription.appendText("It should also allow other plugins that uses the cache like Dataview")
             
-            const enableCachingWarning = createEl("div", {text: "Since this is this is still experimental. ", cls: "mod-warning", parent: enableCachingDescription});
+            const enableCachingWarning = createDiv({text: "Since this is this is still experimental. ", cls: "mod-warning", parent: enableCachingDescription});
             const enableCachingWarningList = createEl("ul", {parent: enableCachingWarning});
             const enableCachingReport = enableCachingWarningList.appendChild(createEl("li", { text: "Some things might not work as expected. Report issues "}))
             enableCachingReport.appendChild(createEl("a", {text: "here", href: "https://github.com/GnoxNahte/obsidian-tab-panels/issues/new/choose"}))
@@ -202,7 +202,7 @@ export class TabPanelsTab extends PluginSettingTab {
             experimentalGroup.addSetting((setting: Setting) => {
                 const rebuildCacheWarning = new DocumentFragment();
                 rebuildCacheWarning.appendText("This is rebuilds the cache if you encounter syncing issues. ");
-                rebuildCacheWarning.appendChild(createEl("div", {text: "It might take sometime depending on the size of your vault", cls: "mod-warning"}));
+                rebuildCacheWarning.appendChild(createDiv({text: "It might take sometime depending on the size of your vault", cls: "mod-warning"}));
             
                 setting
                     .setName("Rebuild cache")
@@ -210,7 +210,7 @@ export class TabPanelsTab extends PluginSettingTab {
                     .addButton(button => button
                         .setButtonText("Rebuild")
                         .setClass("mod-warning")
-                        .onClick(async (evt) => {
+                        .onClick(async (_) => {
                             await rebuildVaultCache(this.plugin);
                         })
                     )
